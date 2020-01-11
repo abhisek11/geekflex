@@ -20,11 +20,15 @@ import datetime
 
 
 class UploadVideoAddView(generics.ListCreateAPIView,mixins.UpdateModelMixin):
-    # permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated]
     # authentication_classes = [TokenAuthentication]
     queryset = Video.objects.filter(is_deleted=False)
     serializer_class = UploadVideoAddSerializer
     # pagination_class = CSPageNumberPagination
+
+    @response_modify_decorator_get
+    def get(self, request, *args, **kwargs):
+        return response
 
     @response_modify_decorator_post
     def post(self, request, *args, **kwargs):
