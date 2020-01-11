@@ -1,0 +1,22 @@
+- [x] Video Rating
+- [x] Video Review
+- [x] Like/ Dislike Reviews
+- [x] Recommended Videos
+- [x] Related Videos
+- [x] Autoplay next video
+- [x] Image Uploading
+- [x] Video Uploading
+- [x] Video Sort
+- [x] Update Video
+- [x] Delete Video
+- [x] Password Reset
+- [x] Channel
+- [x] Subscribes
+- [x] Notifications for uploaded video of subscribes
+- [x] Auto thumbnail generate
+- [x] Upload Custom thumbnail
+- [ ] Auto generate custom thumbnail by video specific frame of user's choice
+- [x] Resize thumbnail to 16:9 dimensions
+- [x] Contain video to HTML5 player while resizing player with % 16:9 scale
+- [ ] Channel Sort
+- [x] Custom Error Pages 404 403 400 500

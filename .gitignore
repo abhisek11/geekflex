@@ -1,14 +1,13 @@
 myenv/
 *.env
-genv/
 __pycache__/
 # db.sqlite3
 
 *.pyc
 migrations/
-media/
+uploads/
 *.vscode
 .history/
-debug.log
+static/
 .idea/workspace.xml
 
