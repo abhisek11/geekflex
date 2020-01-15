@@ -38,7 +38,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    'rest_framework.authtoken',
+    # 'rest_framework.authtoken',
+    'knox',
     'videoservices',
 ]
 
@@ -51,7 +52,8 @@ INSTALLED_APPS = [
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework.authentication.TokenAuthentication',
+        # 'rest_framework.authentication.TokenAuthentication',
+        'knox.auth.TokenAuthentication',
     ),
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
@@ -133,7 +135,8 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
+# AUTHENTICATION_BACKENDS = ('backends.EmailandPhoneAuthBackend', 'django.contrib.auth.backends.ModelBackend',)
+AUTHENTICATION_BACKENDS = ('backends.EmailandPhoneAuthBackend',)
 # Internationalization
 # https://docs.djangoproject.com/en/3.0/topics/i18n/
 

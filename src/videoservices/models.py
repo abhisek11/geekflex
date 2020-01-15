@@ -35,7 +35,7 @@ class Profile(models.Model):
         ('F', 'Female'),
         ('O','Other')
     )
-    user = models.OneToOneField(User,on_delete=models.CASCADE)
+    user = models.OneToOneField(User,on_delete=models.CASCADE,blank=True,null=True)
     account = models.CharField(default='Individual', choices=ACCOUNT_TYPES,max_length=20)
     image = models.ImageField(upload_to="avatars", default="avatar/None/default_avatar.png")
     firstname = models.CharField(blank=True, max_length=30)
@@ -44,7 +44,7 @@ class Profile(models.Model):
     email = models.EmailField(blank=True,unique=True)
     dob = models.DateField(default=date(1000, 1, 1))
     gender = models.CharField(blank=True, max_length=1, choices=GENDER)
-    phone = models.CharField(blank=True, max_length=20,unique=True)
+    phone = models.CharField(blank=True, max_length=10,unique=True)
     child_count = models.IntegerField(default=0)
     is_deleted = models.BooleanField(default=False)
     created_by = models.ForeignKey(User, related_name='p_created_by',
@@ -57,9 +57,9 @@ class Profile(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        if self.account == 'Parent':
-            self.child_count = 2 
-            self.save()
+        # if self.account == 'Parent':
+        #     self.child_count = 2 
+        #     self.save()
         return str(self.id)
 
     class Meta:
