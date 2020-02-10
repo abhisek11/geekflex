@@ -9,6 +9,7 @@ from django.conf.urls import *
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    # path('api/social/', include('rest_framework_social_oauth2.urls')),
     path('',include('videoservices.urls')),
     path('',include('users.urls')),
 ]

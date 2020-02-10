@@ -22,6 +22,8 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'qke)dgfjrc6ikp)oon#si-lv1xrn#s-#6alo40=&5dx930_f%)'
 
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
@@ -39,16 +41,19 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     # 'rest_framework.authtoken',
+    'sslserver',
+    'oauth2_provider',
+    'social_django',
+    'rest_framework_social_oauth2',
+    'django_otp',
+    'django_otp.plugins.otp_totp',
+    'django_otp.plugins.otp_static',
     'knox',
     'videoservices',
+    'mailapp',
+    'smsapp',
+    'corsheaders'
 ]
-
-# REST_FRAMEWORK = {
-#     'DEFAULT_AUTHENTICATION_CLASSES': [
-#         'rest_framework.authentication.BasicAuthentication',
-#         'rest_framework.authentication.SessionAuthentication',
-#     ]
-# }
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -67,12 +72,14 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django_otp.middleware.OTPMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
 ]
 
 ROOT_URLCONF = 'kidsclub.urls'
-
+CORS_ORIGIN_ALLOW_ALL = True
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -84,6 +91,8 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'social_django.context_processors.backends',
+                'social_django.context_processors.login_redirect',
             ],
         },
     },
@@ -116,6 +125,20 @@ DATABASES = {
     }
 }
 
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.mysql',
+#         'NAME': 'banaoapp_kidsclub',
+#         'USER': 'banaoapp_kids',
+#         'PASSWORD': 'kidsclub@12345',
+#         'HOST': '127.0.0.1',
+#         'PORT': '3306',
+#         'OPTIONS': {
+#             'sql_mode': 'traditional',
+#         }
+#     }
+# }
+
 
 # Password validation
 # https://docs.djangoproject.com/en/3.0/ref/settings/#auth-password-validators
@@ -136,13 +159,18 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 # AUTHENTICATION_BACKENDS = ('backends.EmailandPhoneAuthBackend', 'django.contrib.auth.backends.ModelBackend',)
-AUTHENTICATION_BACKENDS = ('backends.EmailandPhoneAuthBackend',)
+AUTHENTICATION_BACKENDS = (
+    'backends.EmailandPhoneAuthBackend',
+    'rest_framework_social_oauth2.backends.DjangoOAuth2',
+    'social_core.backends.facebook.FacebookOAuth2',
+)
 # Internationalization
 # https://docs.djangoproject.com/en/3.0/topics/i18n/
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+# TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Kolkata'
 
 USE_I18N = True
 
@@ -150,6 +178,35 @@ USE_L10N = True
 
 USE_TZ = True
 
+#************The below settings for EMAIL AND SMS SEND IS FOR TEST AND DEVELOPMENT ****************************
+
+#===============Email================================#
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_FROM_C = 'shyamdemo2018@gmail.com'
+DEFAULT_FROM_EMAIL = 'shyamdemo2018@gmail.com'
+
+'''
+    GMAIL Configaration (Demo)
+'''
+SERVER_EMAIL = 'shyamdemo2018@gmail.com'
+EMAIL_USE_TLS = True
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_HOST_USER = 'shyamdemo2018@gmail.com'
+EMAIL_HOST_PASSWORD = 'hjtrgqurebsusywx'
+
+
+# ============= SMS configrations =================
+# SMS_URL = "https://sms.faresms.com/api_v2/message/send"
+# # SMS_API_KEY = "g7B5sc9OU_y1f-f35t8LnfFO2VELyBzRdXATCxljovrfcJjDOI3hZV1XQO1X8zfY"
+# # SMS_PORT = 80
+# SMS_USER = 'shail'
+# SMS_PASS = '62009'
+# SMS_SENDER = 'SSILMA'
+
+######### TEXT LOCAL SMS GATEWAY CONFIGURATION ########
+
+TXT_LOCAL_SMS_API_KEY = "TXjUs8d/J0w-nGlbXJH2yCDthHQ0xh8VDkVlM2Z8Xh"
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.0/howto/static-files/
@@ -165,3 +222,11 @@ MSG_SUCCESS="Success"
 MSG_NO_DATA="No Data Found"
 MSG_ERROR="Failure"
 # ============= Error Msg configrations =================
+
+# REDIRECT_URL = 'http://166.62.54.122/kidsclub/'
+REDIRECT_URL = 'http://192.168.24.129:4200/'
+# REDIRECT_URL = 'https://166.62.54.122/kidsclub/'
+# #=================TESTING AND DEVELOPMENT CONFIGRATION FOR SOCIAL AUTH================================= 
+
+
+#***********************************XXXXXXXX**************************************************************

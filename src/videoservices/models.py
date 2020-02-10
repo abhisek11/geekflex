@@ -24,6 +24,13 @@ class Genere(models.Model):
 
 
 class Profile(models.Model):
+
+    AUTH_TYPES = (
+        ('Kidsclub','Kidsclub'),
+        ('Facebook','Facebook'),
+        ('Google','Google'),
+    )
+    
     ACCOUNT_TYPES = (
         ('Individual', 'Individual'),
         ('Parent','Parent'),
@@ -35,17 +42,22 @@ class Profile(models.Model):
         ('F', 'Female'),
         ('O','Other')
     )
+    auth_provider = models.CharField(default='Kidsclub', choices=AUTH_TYPES,max_length=20)
     user = models.OneToOneField(User,on_delete=models.CASCADE,blank=True,null=True)
     account = models.CharField(default='Individual', choices=ACCOUNT_TYPES,max_length=20)
-    image = models.ImageField(upload_to="avatars", default="avatar/None/default_avatar.png")
-    firstname = models.CharField(blank=True, max_length=30)
-    lastname = models.CharField(blank=True, max_length=150)
+    photoUrl = models.CharField( max_length=1000,blank=True,null=True)
+    image = models.ImageField(upload_to="avatars", default="avatars/None/default_avatar.png")
+    firstname = models.CharField(blank=True, max_length=30,null=True)
+    lastname = models.CharField(blank=True, max_length=150,null=True)
     company_name = models.CharField(blank=True, max_length=150,null=True)
-    email = models.EmailField(blank=True,unique=True)
+    address = models.CharField(blank=True, max_length=250,null=True)
+    email = models.EmailField(blank=True,null=True)
     dob = models.DateField(default=date(1000, 1, 1))
     gender = models.CharField(blank=True, max_length=1, choices=GENDER)
-    phone = models.CharField(blank=True, max_length=10,unique=True)
+    phone = models.CharField(blank=True, max_length=10,null=True)
     child_count = models.IntegerField(default=0)
+    is_phone_verified = models.BooleanField(default=False)
+    is_email_verified = models.BooleanField(default=False)
     is_deleted = models.BooleanField(default=False)
     created_by = models.ForeignKey(User, related_name='p_created_by',
                                    on_delete=models.CASCADE, blank=True, null=True)
@@ -71,10 +83,11 @@ class SubChildProfile(models.Model):
         ('F', 'Female'),
         ('O','Other')
     )
-    profile = models.OneToOneField(Profile,on_delete=models.CASCADE)
+    profile = models.ForeignKey(Profile,on_delete=models.CASCADE)
     firstname = models.CharField(blank=True, max_length=30)
     lastname = models.CharField(blank=True, max_length=150)
     dob = models.DateField(default=date(1000, 1, 1))
+    image = models.ImageField(upload_to="avatars", default="avatars/None/default_avatar.png")
     gender = models.CharField(blank=True, max_length=1, choices=GENDER)
     is_deleted = models.BooleanField(default=False)
     created_by = models.ForeignKey(User, related_name='s_c_p_created_by',
@@ -107,6 +120,7 @@ class Video(models.Model):
     description = models.TextField(max_length=3000,blank=True,null=True)
     category = models.ForeignKey(Genere, on_delete=models.CASCADE,blank=True,null=True)
     private_video = models.BooleanField(default=False)
+    featured_video = models.BooleanField(default=False)
     private_code = models.CharField(max_length=10,blank=True,null=True)
     term_and_conditions = models.BooleanField(default=False)
     age_range = models.CharField(default='21+ or above', choices=AGE_RANGE,max_length=20)
@@ -155,9 +169,9 @@ class VideoViews(models.Model):
     )
     Profile = models.IntegerField(default=0)
     video = models.ForeignKey(Video, on_delete=models.CASCADE,blank=True,null=True)
-    mood = models.CharField(default='Happy', choices=MOOD_TYPE,max_length=20)
+    mood = models.CharField(default='Happy', choices=MOOD_TYPE,max_length=20,blank=True, null=True)
     view_date = models.DateTimeField(blank=True, null=True)
-    ip_address = models. GenericIPAddressField()
+    ip_address = models.GenericIPAddressField()
     is_deleted = models.BooleanField(default=False)
     created_by = models.ForeignKey(User, related_name='v_v_created_by',
                                    on_delete=models.CASCADE, blank=True, null=True)

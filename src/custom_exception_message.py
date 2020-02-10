@@ -28,7 +28,7 @@ class CustomAPIException(exceptions.APIException):
         print('status_code',status_code)
         if msg:
             self.detail = {
-                        "error":{
+                        "result":{
                             'request_status': 0, 
                             'msg': msg
                             }
