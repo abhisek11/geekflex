@@ -21,7 +21,25 @@ class Genere(models.Model):
     class Meta:
         db_table = 'Genere'
 
+class CountryCode(models.Model):
+    name = models.CharField(max_length=200,blank=True,null=True)
+    dial_code = models.CharField(max_length=10,blank=True,null=True)
+    code=models.CharField(max_length=4,blank=True,null=True)
+    is_deleted = models.BooleanField(default=False)
+    created_by = models.ForeignKey(User, related_name='c_c_created_by',
+                                   on_delete=models.CASCADE, blank=True, null=True)
+    owned_by = models.ForeignKey(User, related_name='c_c_owned_by',
+                                 on_delete=models.CASCADE, blank=True, null=True)
+    updated_by = models.ForeignKey(User, related_name='c_c_updated_by',
+                                   on_delete=models.CASCADE, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
+    def __str__(self):
+        return str(self.id)
+
+    class Meta:
+        db_table = 'countrycode'
 
 class Profile(models.Model):
 
@@ -30,7 +48,12 @@ class Profile(models.Model):
         ('Facebook','Facebook'),
         ('Google','Google'),
     )
-    
+    VERIFIED_TYPES = (
+        (0,'Not Verified'),
+        (1,'Pending'),
+        (2,'Verified'),
+        (3,'rejected'),
+    )
     ACCOUNT_TYPES = (
         ('Individual', 'Individual'),
         ('Parent','Parent'),
@@ -43,6 +66,7 @@ class Profile(models.Model):
         ('O','Other')
     )
     auth_provider = models.CharField(default='Kidsclub', choices=AUTH_TYPES,max_length=20)
+    verified = models.IntegerField(default=0, choices=VERIFIED_TYPES)
     user = models.OneToOneField(User,on_delete=models.CASCADE,blank=True,null=True)
     account = models.CharField(default='Individual', choices=ACCOUNT_TYPES,max_length=20)
     photoUrl = models.CharField( max_length=1000,blank=True,null=True)
@@ -54,6 +78,8 @@ class Profile(models.Model):
     email = models.EmailField(blank=True,null=True)
     dob = models.DateField(default=date(1000, 1, 1))
     gender = models.CharField(blank=True, max_length=1, choices=GENDER)
+    country_code = models.ForeignKey(CountryCode,on_delete=models.CASCADE,blank=True,null=True)
+    dial_code= models.CharField(blank=True, max_length=4,null=True)
     phone = models.CharField(blank=True, max_length=10,null=True)
     child_count = models.IntegerField(default=0)
     is_phone_verified = models.BooleanField(default=False)
@@ -108,15 +134,13 @@ class SubChildProfile(models.Model):
 
 class Video(models.Model):
     AGE_RANGE = (
-        ('1-13', '1-13'),
-        ('14-21','14-21'),
-        ('21+ or above','21+ or above'),
-
+        ('3-12', '3-12'),
+        ('13-17','13-17'),
+        ('18+ or above','18+ or above'),
     )
     channel = models.ForeignKey(Profile, on_delete=models.CASCADE,blank=True,null=True)
     video = models.FileField(upload_to="videos")
     title = models.CharField(max_length=46,blank=True,null=True)
-    tags = models.CharField(max_length=200,blank=True,null=True)
     description = models.TextField(max_length=3000,blank=True,null=True)
     category = models.ForeignKey(Genere, on_delete=models.CASCADE,blank=True,null=True)
     private_video = models.BooleanField(default=False)
@@ -140,11 +164,28 @@ class Video(models.Model):
     class Meta:
         db_table = 'Video'
 
-
-
-class VideoThumpnilDocuments(models.Model):
+class VideoTags(models.Model):
     video = models.ForeignKey(Video, on_delete=models.CASCADE,blank=True,null=True)
-    thumpnail = models.FileField(upload_to="thumpnails", default="thumpnail/None/default_thump.png")
+    tags = models.CharField(max_length=200,blank=True,null=True)
+    is_deleted = models.BooleanField(default=False)
+    created_by = models.ForeignKey(User, related_name='v_t_created_by',
+                                   on_delete=models.CASCADE, blank=True, null=True)
+    owned_by = models.ForeignKey(User, related_name='v_t_owned_by',
+                                 on_delete=models.CASCADE, blank=True, null=True)
+    updated_by = models.ForeignKey(User, related_name='v_t_updated_by',
+                                   on_delete=models.CASCADE, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return str(self.id)
+
+    class Meta:
+        db_table = 'videotags'
+
+class VideoThumbnailDocuments(models.Model):
+    video = models.ForeignKey(Video, on_delete=models.CASCADE,blank=True,null=True)
+    thumbnail = models.FileField(upload_to="thumpnails", default="thumpnail/None/default_thump.png")
     is_deleted = models.BooleanField(default=False)
     created_by = models.ForeignKey(User, related_name='v_t_d_created_by',
                                    on_delete=models.CASCADE, blank=True, null=True)
@@ -159,7 +200,7 @@ class VideoThumpnilDocuments(models.Model):
         return str(self.id)
 
     class Meta:
-        db_table = 'VideoThumpnilDocuments'
+        db_table = 'VideoThumbnailDocuments'
 
 class VideoViews(models.Model):
     MOOD_TYPE =(
@@ -170,7 +211,7 @@ class VideoViews(models.Model):
     Profile = models.IntegerField(default=0)
     video = models.ForeignKey(Video, on_delete=models.CASCADE,blank=True,null=True)
     mood = models.CharField(default='Happy', choices=MOOD_TYPE,max_length=20,blank=True, null=True)
-    view_date = models.DateTimeField(blank=True, null=True)
+    view_date = models.DateTimeField(auto_now_add=True)
     ip_address = models.GenericIPAddressField()
     is_deleted = models.BooleanField(default=False)
     created_by = models.ForeignKey(User, related_name='v_v_created_by',

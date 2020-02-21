@@ -30,7 +30,16 @@ class Video(admin.ModelAdmin):
 class VideoViews(admin.ModelAdmin):
     list_display = [field.name for field in VideoViews._meta.fields]
 
-@admin.register(VideoThumpnilDocuments)
-class VideoThumpnilDocuments(admin.ModelAdmin):
-    list_display = [field.name for field in VideoThumpnilDocuments._meta.fields]
+@admin.register(VideoThumbnailDocuments)
+class VideoThumbnailDocuments(admin.ModelAdmin):
+    list_display = [field.name for field in VideoThumbnailDocuments._meta.fields]
+
+@admin.register(CountryCode)
+class CountryCode(admin.ModelAdmin):
+    list_display = [field.name for field in CountryCode._meta.fields]
+    search_fields = ('name',)
+
+@admin.register(VideoTags)
+class VideoTags(admin.ModelAdmin):
+    list_display = [field.name for field in VideoTags._meta.fields]
 

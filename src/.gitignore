@@ -2,7 +2,7 @@ myenv/
 *.env
 __pycache__/
 # db.sqlite3
-
+settings.py
 *.pyc
 migrations/
 uploads/
@@ -10,4 +10,6 @@ uploads/
 .history/
 static/
 .idea/workspace.xml
+
+
 

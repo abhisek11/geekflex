@@ -12,12 +12,14 @@ from django.db.models.functions import Concat
 from django.db.models import Value
 from threading import Thread  # for threading
 import datetime
+from custom_functions import get_client_ip
 
 class EditProfileSerializer(serializers.ModelSerializer):
     updated_by = serializers.CharField(default=serializers.CurrentUserDefault())
     owned_by = serializers.CharField(default=serializers.CurrentUserDefault())
     image = serializers.FileField(required=False)
     subscribed_count=serializers.IntegerField(required=False)
+    company_name = serializers.CharField(required=False)
     class Meta:
         model=Profile
         fields='__all__'
@@ -48,6 +50,8 @@ class EditProfileSerializer(serializers.ModelSerializer):
                     instance.dob = validated_data.get('dob')
                     instance.gender = validated_data.get('gender')
                     instance.phone = validated_data.get('phone')
+                    instance.country_code=validated_data.get('country_code')
+                    instance.dial_code=validated_data.get('dial_code')
                     instance.updated_by = updated_by
                     instance.__dict__['subscribed_count']=Subscription.objects.filter(subscribe=instance.id).\
                         values_list('profile',flat=True).distinct().count()
@@ -55,6 +59,8 @@ class EditProfileSerializer(serializers.ModelSerializer):
                 else:
                     instance.company_name = validated_data.get('company_name')
                     instance.phone = validated_data.get('phone')
+                    instance.country_code=validated_data.get('country_code')
+                    instance.dial_code=validated_data.get('dial_code')
                     instance.address = validated_data.get('address')
                     instance.updated_by = updated_by
                     instance.__dict__['subscribed_count']=Subscription.objects.filter(subscribe=instance.id).\
@@ -63,10 +69,19 @@ class EditProfileSerializer(serializers.ModelSerializer):
                 return instance
         except Exception as e:
             raise e
+
+class VerifiedProfileRequestViewSerializer(serializers.ModelSerializer):
+    updated_by = serializers.CharField(default=serializers.CurrentUserDefault())
+    owned_by = serializers.CharField(default=serializers.CurrentUserDefault())
+    class Meta:
+        model=Profile
+        fields=('id','verified','updated_by','updated_at','owned_by')
+    
 class ProfileOrChannelDetailsSerializer(serializers.ModelSerializer):
     created_by = serializers.CharField(default=serializers.CurrentUserDefault())
     owned_by = serializers.CharField(default=serializers.CurrentUserDefault())
     subscriber_counts = serializers.IntegerField(required=False)
+    country_details = serializers.DictField(required=False)
     image = serializers.FileField(required=False)
 
     class Meta:
@@ -80,6 +95,46 @@ class EditProfileImageSerializer(serializers.ModelSerializer):
     class Meta:
         model=Profile
         fields=('id','image','updated_by','owned_by')
+    
+
+class RemoveProfileImageViewSerializer(serializers.ModelSerializer):
+    updated_by = serializers.CharField(default=serializers.CurrentUserDefault())
+    owned_by = serializers.CharField(default=serializers.CurrentUserDefault())
+
+    class Meta:
+        model=Profile
+        fields=('id','image','updated_by','owned_by')
+    
+    def update(self,instance, validated_data):
+        updated_by = serializers.CharField(default=serializers.CurrentUserDefault())
+        try:
+            updated_by = validated_data.get('updated_by')
+            instance.image=None
+            instance.updated_by=updated_by
+            instance.save()
+            return instance
+        except Exception as e:
+            raise e
+
+class RemoveProfileSubChildImageViewSerializer(serializers.ModelSerializer):
+    updated_by = serializers.CharField(default=serializers.CurrentUserDefault())
+    owned_by = serializers.CharField(default=serializers.CurrentUserDefault())
+
+    class Meta:
+        model=SubChildProfile
+        fields=('id','image','updated_by','owned_by')
+    
+    def update(self,instance, validated_data):
+        updated_by = serializers.CharField(default=serializers.CurrentUserDefault())
+        try:
+            updated_by = validated_data.get('updated_by')
+            instance.image=None
+            instance.updated_by=updated_by
+            instance.save()
+            return instance
+        except Exception as e:
+            raise e
+
 
 class EditSubChildProfileImageViewSerializer(serializers.ModelSerializer):
     updated_by = serializers.CharField(default=serializers.CurrentUserDefault())
@@ -115,7 +170,7 @@ class SubscribeChannelAddSerializer(serializers.ModelSerializer):
 class UploadVideoAddSerializer(serializers.ModelSerializer):
     created_by = serializers.CharField(default=serializers.CurrentUserDefault())
     owned_by = serializers.CharField(default=serializers.CurrentUserDefault())
-    # private_code =  serializers.CharField(required=False)
+    tags =  serializers.ListField(required=False)
     class Meta:
         model=Video
         fields=('__all__')
@@ -138,12 +193,27 @@ class UploadVideoAddSerializer(serializers.ModelSerializer):
         except Exception as e:
             raise e
 
+class VideoListViewSerializer(serializers.ModelSerializer):
+    created_by = serializers.CharField(default=serializers.CurrentUserDefault())
+    owned_by = serializers.CharField(default=serializers.CurrentUserDefault())
+    # tags =  serializers.ListField(required=False)
+    class Meta:
+        model=Video
+        fields=('__all__')
 
-class UploadVideoThumpnailAddSerializer(serializers.ModelSerializer):
+class TagsListViewSerializer(serializers.ModelSerializer):
+    created_by = serializers.CharField(default=serializers.CurrentUserDefault())
+    owned_by = serializers.CharField(default=serializers.CurrentUserDefault())
+    # tags =  serializers.ListField(required=False)
+    class Meta:
+        model=VideoTags
+        fields=('__all__')
+
+class UploadVideoThumbnailAddViewSerializer(serializers.ModelSerializer):
     created_by = serializers.CharField(default=serializers.CurrentUserDefault())
     owned_by = serializers.CharField(default=serializers.CurrentUserDefault())
     class Meta:
-        model=VideoThumpnilDocuments
+        model=VideoThumbnailDocuments
         fields='__all__'
         
 class VideoListingGenereViewAddSerializer(serializers.ModelSerializer):
@@ -153,6 +223,61 @@ class VideoListingGenereViewAddSerializer(serializers.ModelSerializer):
     class Meta:
         model=Video
         fields='__all__'
+
+class VideoViewsViewAddSerializer(serializers.ModelSerializer):
+    created_by = serializers.CharField(default=serializers.CurrentUserDefault())
+    owned_by = serializers.CharField(default=serializers.CurrentUserDefault())
+    ip_address= serializers.IPAddressField(required=False)
+    class Meta:
+        model=VideoViews
+        fields='__all__'
+
+    def create(self,validated_data):
+        try:
+            request =  self.context.get('request')
+            print("request.user.is_authenticated",request.user.is_authenticated)
+            if request.user.is_authenticated:
+                profile_id = request.user.profile.id
+                created_by = validated_data.get('created_by')
+            else:
+                profile_id=0
+                created_by = None
+            video= validated_data.get('video')
+            
+            ip_address = get_client_ip(request)
+            # ip = ip_address(request)
+            with transaction.atomic():
+                video_view = VideoViews.objects.create(Profile=profile_id,video=video,
+                                                        ip_address=ip_address,created_by=created_by)
+               
+                # validated_data['video'] =  request.build_absolute_uri(upload.video.url)
+                validated_data['profile_id'] =  profile_id
+                validated_data['ip_address'] =  ip_address
+                validated_data['id']=video_view.id
+                return validated_data
+
+        except Exception as e:
+            raise e
+
+class CountryCodeViewAddSerializer(serializers.ModelSerializer):
+    created_by = serializers.CharField(default=serializers.CurrentUserDefault())
+    owned_by = serializers.CharField(default=serializers.CurrentUserDefault())
+    country_codes = serializers.ListField(required=False)
+    class Meta:
+        model=CountryCode
+        fields='__all__'
+
+    def create(self,validated_data):
+        try:
+            request =  self.context.get('request')
+            with transaction.atomic():
+                for extention_data in validated_data.get("country_codes"):
+                    country_code_create = CountryCode.objects.create(**extention_data)
+                return validated_data
+
+        except Exception as e:
+            raise e
+
 
 class HomeVideoListingViewSerializer(serializers.ModelSerializer):
     created_by = serializers.CharField(default=serializers.CurrentUserDefault())
@@ -179,3 +304,29 @@ class ChannelVideoListingViewSerializer(serializers.ModelSerializer):
         model=Video
         fields='__all__'
 
+
+class GenereAddListViewSerializer(serializers.ModelSerializer):
+    created_by = serializers.CharField(default=serializers.CurrentUserDefault())
+    owned_by = serializers.CharField(default=serializers.CurrentUserDefault())
+    genere_data=serializers.ListField(required=False)
+    name = serializers.CharField(required=False)
+    class Meta:
+        model=Genere
+        fields=('__all__')
+
+    def create(self,validated_data):
+        try:
+            request =  self.context.get('request')
+            genere_data = validated_data.get('genere_data')
+            created_by=validated_data.get('created_by')
+            owned_by=validated_data.get('owned_by')
+
+            with transaction.atomic():
+                for g_data in genere_data:
+                    genere_add = Genere.objects.create(**g_data,created_by=created_by,
+                                                        owned_by=owned_by)
+
+                return validated_data
+
+        except Exception as e:
+            raise e

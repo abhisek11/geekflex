@@ -26,6 +26,7 @@ from django.conf import settings
 from pagination import CSLimitOffestpagination, CSPageNumberPagination,OnOffPagination
 from django_filters.rest_framework import DjangoFilterBackend
 import collections
+from adminpanel.models import *
 from videoservices.models import *
 from rest_framework import mixins
 from custom_decorator import *
@@ -43,7 +44,7 @@ from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from OTPvarify import TOTPVerification
 from kidsclub.settings import REDIRECT_URL as redirect_url
 from django.shortcuts import render,redirect
-
+from django.views.decorators.csrf import csrf_exempt
 def activate(request, uidb64):  
     try:  
         uid = force_text(urlsafe_base64_decode(uidb64))  
@@ -60,57 +61,196 @@ def activate(request, uidb64):
         return redirect(redirect_url+'email-not-verified/','Activation link is invalid!') 
         # return HttpResponse('Activation link is invalid!')
 
-def phoneexists(request,phone_no):
-
-    Phone_number = phone_no
-    is_exist_number = Profile.objects.filter(phone=Phone_number).exists()
-    print("is_exist_number",is_exist_number)
-    if is_exist_number == True:
-        return JsonResponse({'request_status': 0,
-                'results':{
-                    'msg':'Sorry!,mobile number already exists,try with another mobile number'
-                    },
-                },
-                status=419)
-    else:
-        return JsonResponse({'request_status': 1,
-                'results':{
-                    'msg':'success'
-                    },
-                },
-                status=status.HTTP_200_OK)
     
+class phoneexists(generics.ListCreateAPIView):
+    permission_classes = [AllowAny]
+    queryset = Profile.objects.filter(is_deleted=False)
 
+    # @response_modify_decorator_post
+    def post(self, request, format=None):
+        try:
+            with transaction.atomic():
+                Phone_number = request.data["phone_no"]
+                dial_code = request.data["dial_code"]
+                print("Phone_number",Phone_number,type(Phone_number))
+                is_exist_number = Profile.objects.filter(phone__iexact=Phone_number,dial_code=dial_code).exists()
+                print("is_exist_number",is_exist_number)
+                if is_exist_number == True:
+                    return Response({'request_status': 0,
+                            'results':{
+                                'msg':'Sorry!,mobile number already exists,try with another mobile number'
+                                },
+                            },
+                            status=419)
+                else:
+                    return Response({'request_status': 1,
+                            'results':{
+                                'msg':'success'
+                                },
+                            },
+                            status=status.HTTP_200_OK)
+        except Exception as e:
+            raise e
 
+class EmailexistsProfileEdit(generics.ListCreateAPIView):
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [TokenAuthentication]
+    queryset = Profile.objects.filter(is_deleted=False)
 
-def PhoneOtpGenerate(request,phone_no):
+    def post(self, request, format=None):
+        try:
+            with transaction.atomic():
 
-    try:  
-        OTP=TOTPVerification()
-        Phone_number = phone_no
-        generate_otp = OTP.generate_token()
-        if Phone_number and generate_otp:
-            message_data = {
-                'otp':generate_otp,
-                'phone':Phone_number,
+                profile_id = request.user.profile.id
+                email_id = request.data["email_id"]
+                print("email_id",email_id,type(email_id))
+                is_exist_email = Profile.objects.exclude(id=profile_id).filter(email__iexact=email_id).exists()
+                print("is_exist_email",is_exist_email)
+                if is_exist_email == True:
+                    return Response({'request_status': 0,
+                            'results':{
+                                'msg':'Sorry!,Email id already exists,try with another email id'
+                                },
+                            },
+                            status=419)
+                else:
+                    return Response({'request_status': 1,
+                            'results':{
+                                'msg':'success'
+                                },
+                            },
+                            status=status.HTTP_200_OK)
+        except Exception as e:
+            raise e
 
-            }
-            sms_class = GlobleSmsSendTxtLocal('OTP-V',[Phone_number])
-            sms_thread = Thread(target = sms_class.sendSMS, args = (message_data,'sms'))
-            sms_thread.start()
-            return JsonResponse({'request_status': 1,
-                'results':{
-                    'Phone_number':Phone_number,
-                    'otp':generate_otp
-                    },
-                'msg':'OTP sent, please check your mobile'
-                },
-                status=status.HTTP_200_OK)
+class Emailexists(generics.ListCreateAPIView):
+    permission_classes = [AllowAny]
+    queryset = Profile.objects.filter(is_deleted=False)
 
-    except ValueError as v:
-        return v
+    # @response_modify_decorator_post
+    def post(self, request, format=None):
+        try:
+            with transaction.atomic():
+                email_id = request.data["email_id"]
+                print("email_id",email_id,type(email_id))
+                is_exist_email = Profile.objects.filter(email__iexact=email_id).exists()
+                print("is_exist_email",is_exist_email)
+                if is_exist_email == True:
+                    return Response({'request_status': 0,
+                            'results':{
+                                'msg':'Sorry!,email-id already exists,try with another email-id'
+                                },
+                            },
+                            status=419)
+                else:
+                    return Response({'request_status': 1,
+                            'results':{
+                                'msg':'success'
+                                },
+                            },
+                            status=status.HTTP_200_OK)
+        except Exception as e:
+            raise e
+class phoneexistsProfileEdit(generics.ListCreateAPIView):
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [TokenAuthentication]
+    queryset = Profile.objects.filter(is_deleted=False)
 
+    def post(self, request, format=None):
+        try:
+            with transaction.atomic():
 
+                profile_id = request.user.profile.id
+                Phone_number = request.data["phone_no"]
+                dial_code = request.data["dial_code"]
+                print("Phone_number",Phone_number,type(Phone_number))
+                is_exist_number = Profile.objects.exclude(id=profile_id).filter(phone__iexact=Phone_number,dial_code=dial_code).exists()
+                print("is_exist_number",is_exist_number)
+                if is_exist_number == True:
+                    return Response({'request_status': 0,
+                            'results':{
+                                'msg':'Sorry!,mobile number already exists,try with another mobile number'
+                                },
+                            },
+                            status=419)
+                else:
+                    return Response({'request_status': 1,
+                            'results':{
+                                'msg':'success'
+                                },
+                            },
+                            status=status.HTTP_200_OK)
+        except Exception as e:
+            raise e
+
+class PhoneOtpGenerate(generics.ListCreateAPIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request, format=None):
+        try:
+            with transaction.atomic():
+                Phone_number = request.data["phone_no"]
+                dial_code = request.data["dial_code"]
+                dial_cd = dial_code[1:]
+                print("Phone_number",Phone_number,"dial_code",dial_code)
+                mobile_number = dial_cd+Phone_number
+                OTP=TOTPVerification()
+                generate_otp = OTP.generate_token()
+                if Phone_number and generate_otp:
+                    message_data = {
+                        'otp':generate_otp,
+                        'phone':mobile_number,
+
+                    }
+                    sms_class = GlobleSmsSendTxtLocal('OTP-V',[mobile_number])
+                    sms_thread = Thread(target = sms_class.sendSMS, args = (message_data,'sms'))
+                    sms_thread.start()
+                    return Response({'request_status': 1,
+                        'results':{
+                            'dial_code':dial_code,
+                            'Phone_number':Phone_number,
+                            # 'otp':generate_otp,
+                            'otp':urlsafe_base64_encode(force_bytes(generate_otp))
+                            },
+                        'msg':'OTP sent, please check your mobile'
+                        },
+                        status=status.HTTP_200_OK)
+        except ValueError as v:
+            return v
+
+class EmailOtpGenerate(generics.ListCreateAPIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request, format=None):
+        try:
+            with transaction.atomic():
+                email_id = request.data["email_id"]
+                print("email_id",email_id)
+                OTP=TOTPVerification()
+                generate_otp = OTP.generate_token()
+                if email_id and generate_otp:
+                    #EMAIL VERIFICATION PART 
+                    mail_id = email_id
+                    if mail_id:
+                        mail_data = {
+                            'otp':generate_otp,
+                            'email_id':email_id,
+                        }
+                        mail_class = GlobleMailSend('EOTP', [mail_id])
+                        mail_thread = Thread(target = mail_class.mailsend, args = (mail_data,))
+                        mail_thread.start()
+                
+                    return Response({'request_status': 1,
+                        'results':{
+                            'email_id':email_id,
+                            # 'otp':generate_otp,
+                            'otp':urlsafe_base64_encode(force_bytes(generate_otp))
+                            },
+                        'msg':'OTP sent, please check your mailid'
+                        },
+                        status=status.HTTP_200_OK)
+        except ValueError as v:
+            return v
 
 
 class AuthCheckerView(generics.ListAPIView):
@@ -144,6 +284,9 @@ class AuthCheckerView(generics.ListAPIView):
                         "dob": user_detials.dob,
                         "gender":user_detials.gender,
                         "phone":user_detials.phone,
+                        "country_code":user_detials.country_code.id,
+                        "dial_code":user_detials.dial_code,
+                        "verified_user_status":{'status_value':user_detials.verified,'status':user_detials.get_verified_display()},
                         "child_count":user_detials.child_count,
                         'subscribed_count':Subscription.objects.filter(subscribe=user_detials.id).\
                         values_list('profile',flat=True).distinct().count()
@@ -154,13 +297,16 @@ class AuthCheckerView(generics.ListAPIView):
                         "profile_id":user_detials.id,
                         "user": user_detials.user.username,
                         "account": user_detials.account,
-                        "image": request.build_absolute_uri(user_detials.image.url),
+                        "image": request.build_absolute_uri(user_detials.image.url) if user_detials.image else None,
                         "firstname":user_detials.firstname,
                         "lastname": user_detials.lastname,
                         "email": user_detials.email,
                         "dob": user_detials.dob,
                         "gender":user_detials.gender,
                         "phone":user_detials.phone,
+                        "country_code":user_detials.country_code.id,
+                        "dial_code":user_detials.dial_code,
+                        "verified_user_status":{'status_value':user_detials.verified,'status':user_detials.get_verified_display()},
                         "child_count":user_detials.child_count,
                         'subscribed_count':Subscription.objects.filter(subscribe=user_detials.id).\
                         values_list('profile',flat=True).distinct().count()
@@ -171,10 +317,13 @@ class AuthCheckerView(generics.ListAPIView):
                     "profile_id":user_detials.id,
                     "user": user_detials.user.username,
                     "account": user_detials.account,
-                    "image": request.build_absolute_uri(user_detials.image.url),
+                    "image": request.build_absolute_uri(user_detials.image.url) if user_detials.image else None,
                     "company_name":user_detials.company_name,
                     "email": user_detials.email,
                     "phone":user_detials.phone,
+                    "country_code":user_detials.country_code.id,
+                    "dial_code":user_detials.dial_code,
+                    "verified_user_status":{'status_value':user_detials.verified,'status':user_detials.get_verified_display()},
                     "address":user_detials.address,
                     'subscribed_count':Subscription.objects.filter(subscribe=user_detials.id).\
                         values_list('profile',flat=True).distinct().count()
@@ -190,14 +339,22 @@ class LoginView(KnoxLoginView):
     def post(self, request, format=None):
         try:
             data = {}
-            auth_provider = request.data['auth_provider']
-            if auth_provider == 'Kidsclub':
+            # if request.data.get('auth_provider') != None:
+            auth_provider = request.data['auth_provider']  
+
+            if auth_provider.lower() == 'kidsclub':
                 username = request.data['username']
                 password = request.data['password']
 
-            elif auth_provider == 'Facebook' or auth_provider == 'Google':
+            elif auth_provider.lower() == 'facebook' or auth_provider.lower() == 'google':
                 username = request.data['username']
                 print("auth_provider",auth_provider,'username',username)
+                
+            elif auth_provider.lower() == 'admin':
+                username = request.data['username']
+                password = request.data['password']
+
+
 
             with transaction.atomic():
 
@@ -205,14 +362,96 @@ class LoginView(KnoxLoginView):
                 serializer = AuthTokenSerializer(data=request.data)
                 serializer.is_valid(raise_exception=True)
                 user = serializer.validated_data['user']
+                print("user",user.is_superuser)
                 login_data = login(request, user)
+                print("login_data",login_data)
                 response = super(LoginView, self).post(request, format=None)
-                user_detials = self.queryset.get(user=user)
-                data['token'] = response.data['token']
-                data['token_expiry']=response.data['expiry']
-                data['username'] = username
+                if user.is_superuser == False:
+                    user_detials = self.queryset.get(user=user)
+                    data['token'] = response.data['token']
+                    data['token_expiry']=response.data['expiry']
+                    data['username'] = username
+                else:
+                    user_detials = User.objects.get(username=user)
+                    role = RoleUserMappingTable.objects.filter(user=user_detials.id)
+                    menu_details_final=[]
+                    if role:
+                        role_data= role.get().role
+                        role_details={
+                            'id':role_data.id,
+                            'role_name':role_data.name,
+                        }
+                        menu_details = RoleMenuMappingTable.objects.filter(role=role_data.id,
+                                        is_deleted=False).values('menu','menu__name','menu__url',
+                                        'menu__parent_id','menu__icon','is_create','is_read','is_delete','is_edit')
+                        for menu in menu_details:
+                            if menu['menu__parent_id'] == 0:
+                                data_dict={
+                                    'id':menu['menu'],
+                                    'name':menu['menu__name'],
+                                    'url':menu['menu__url'] ,
+                                    'icon':menu['menu__icon'],
+                                    "linkProps": {
+                                        "queryParams": {
+                                            "is_create": menu['is_create'],
+                                            "is_read": menu['is_read'],
+                                            "is_delete": menu['is_delete'],
+                                            "is_edit": menu['is_edit']
+                                        }
+                                    }
+                                }
+                                if data_dict not in menu_details_final:
+                                        menu_details_final.append(data_dict)
+                            else:
+                                parent_data = AdminMenu.objects.filter(id=menu['menu__parent_id']).values('id','name','url','icon')
+                                if parent_data:
+                                    child_list=[]
+                                    meta_child={}
+                                    data_dict=parent_data[0]
+                                    child_data = menu_details.filter(menu__parent_id=menu['menu__parent_id']).values('menu','menu__name','menu__url',
+                                        'menu__parent_id','menu__icon','is_create','is_read','is_delete','is_edit')
+                                    print("child_data",child_data)
+                                    for child in child_data:
+                                        meta_child={
+                                            'id':child['menu'],
+                                            'name':child['menu__name'],
+                                            'url':child['menu__url'] ,
+                                            'icon':child['menu__url'],
+                                            "linkProps": {
+                                                "queryParams": {
+                                                    "is_create": menu['is_create'],
+                                                    "is_read": menu['is_read'],
+                                                    "is_delete": menu['is_delete'],
+                                                    "is_edit": menu['is_edit']
+                                                }
+                                            }
+                                        }
+                                        child_list.append(meta_child)
+                                    data_dict['children']=child_list
+                                    if data_dict not in menu_details_final:
+                                        menu_details_final.append(data_dict)
+
+                    else:
+                        role_details={}
+                        menu_details_final=[]
+
+                    data['token'] = response.data['token']
+                    data['token_expiry']=response.data['expiry']
+                    data['role_details']=role_details
+                    data['menu_details']=menu_details_final
+                    data['user_details']={
+                        'username':username,
+                        "user_id":user_detials.id,
+                        "firstname":user_detials.first_name,
+                        "lastname": user_detials.last_name,
+                        "email": user_detials.email,
+                        "is_superuser": user_detials.is_superuser,
+                    }
+
+                    return Response(data)
+
                 if user_detials.account != 'Company':
-                    if user_detials.auth_provider != 'Kidsclub':
+                    if user_detials.auth_provider.lower() != 'kidsclub':
                         data['user_details']={
                                 "user_id":user_detials.user.id,
                                 "profile_id":user_detials.id,
@@ -225,6 +464,9 @@ class LoginView(KnoxLoginView):
                                 "dob": user_detials.dob,
                                 "gender":user_detials.gender,
                                 "phone":user_detials.phone,
+                                "country_code":user_detials.country_code.id,
+                                "dial_code":user_detials.dial_code,
+                                "verified_user_status":{'status_value':user_detials.verified,'status':user_detials.get_verified_display()},
                                 "child_count":user_detials.child_count,
                                 'subscribed_count':Subscription.objects.filter(subscribe=user_detials.id).\
                         values_list('profile',flat=True).distinct().count()
@@ -235,13 +477,16 @@ class LoginView(KnoxLoginView):
                                 "profile_id":user_detials.id,
                                 "user": user_detials.user.username,
                                 "account": user_detials.account,
-                                "image": request.build_absolute_uri(user_detials.image.url),
+                                "image": request.build_absolute_uri(user_detials.image.url) if user_detials.image else None,
                                 "firstname":user_detials.firstname,
                                 "lastname": user_detials.lastname,
                                 "email": user_detials.email,
                                 "dob": user_detials.dob,
                                 "gender":user_detials.gender,
                                 "phone":user_detials.phone,
+                                "country_code":user_detials.country_code.id,
+                                "dial_code":user_detials.dial_code,
+                                "verified_user_status":{'status_value':user_detials.verified,'status':user_detials.get_verified_display()},
                                 "child_count":user_detials.child_count,
                                 'subscribed_count':Subscription.objects.filter(subscribe=user_detials.id).\
                         values_list('profile',flat=True).distinct().count()
@@ -253,18 +498,17 @@ class LoginView(KnoxLoginView):
                             "profile_id":user_detials.id,
                             "user": user_detials.user.username,
                             "account": user_detials.account,
-                            "image": request.build_absolute_uri(user_detials.image.url),
+                            "image": request.build_absolute_uri(user_detials.image.url) if user_detials.image else None ,
                             "company_name":user_detials.company_name,
                             "email": user_detials.email,
                             "phone":user_detials.phone,
+                            "country_code":user_detials.country_code.id,
+                            "dial_code":user_detials.dial_code,
+                            "verified_user_status":{'status_value':user_detials.verified,'status':user_detials.get_verified_display()},
                             "address":user_detials.address,
                             'subscribed_count':Subscription.objects.filter(subscribe=user_detials.id).\
                         values_list('profile',flat=True).distinct().count()
                         }
-                    
-
-                
-
                 return Response(data)
                 
                 
@@ -370,19 +614,35 @@ class ForgotPasswordView(generics.ListCreateAPIView):
     @response_modify_decorator_post
     def post(self, request, *args, **kwargs):
         user = self.queryset
-        phone_no =request.data['phone_no'] 
+        if request.data.get('email_id'):
+            email_id =request.data['email_id'] 
+        else:
+            email_id=None
+        if request.data.get('phone_no'):
+            phone_no =request.data['phone_no'] 
+            dial_code=request.data['dial_code']
+        else:
+            phone_no=None
         new_password = request.data['new_password']
-        confirm_password = request.data['confirm_password'] 
+        confirm_password = request.data['confirm_password']
         try:
-            user_details_exiest = Profile.objects.get(phone=phone_no).user.id
+            if phone_no and email_id is None:
+                user_details_exiest = Profile.objects.get(dial_code=dial_code,phone=phone_no).user.id
+            elif phone_no is None and email_id :
+                user_details_exiest = Profile.objects.get(email=email_id).user.id
+
         except(TypeError, ValueError, OverflowError, User.DoesNotExist): 
             raise CustomAPIException(None,'Matching User does not exist !',status_code=status.HTTP_404_NOT_FOUND)
         print("user_details_exiest",user_details_exiest)
         if user_details_exiest :
             if new_password == confirm_password:
                 user = user.get(id=user_details_exiest)
-                user.set_password(new_password)  # set password...
-                user.save()
+                if user.check_password(new_password) == False:
+                    user.set_password(new_password)  # set password...
+                    user.save()
+                else:
+                    msg = 'Your new password is similar to old password. Please try with another password.'
+                    raise CustomAPIException(None,msg,status_code=status.HTTP_409_CONFLICT)
                 # LogoutAllView.post(self,request)
                 #print('user_data',user_data.cu_user.password)
             return Response({'request_status': 1,'result':{'msg': "New Password Save Success..."}},status=status.HTTP_200_OK)

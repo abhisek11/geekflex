@@ -19,8 +19,12 @@ urlpatterns = [
     path('signup_for_subchild/', views.SignupSubChildUserView.as_view()), 
     path('edit_for_subchild/<pk>/', views.EditSubChildProfileView.as_view()), 
     path('activate/<uidb64>/',views.activate, name='activate'), #ACTIVATE ACCOUNT AFTER EMAIL VERIFY AUTOMATICALLY
-    path('phone_number_verify/<phone_no>/',views.PhoneOtpGenerate, name='generate_otp'),
-    path('phone_number_exists_or_not/<phone_no>/',views.phoneexists),
+    path('phone_number_verify/',views.PhoneOtpGenerate.as_view(), name='generate_otp'),
+    path('email_verify/',views.EmailOtpGenerate.as_view(), name='generate_otp'),
+    path('phone_number_exists_or_not/',views.phoneexists.as_view()),
+    path('phone_number_exists_or_not_profile_edit/',views.phoneexistsProfileEdit.as_view()),
+    path('email_exists_or_not/',views.Emailexists.as_view()),
+    path('email_exists_or_not_profile_edit/',views.EmailexistsProfileEdit.as_view()),
 
     
     ###################### Multi session Login Logout #####################################

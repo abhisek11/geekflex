@@ -12,6 +12,7 @@ urlpatterns = [
     # path('api/social/', include('rest_framework_social_oauth2.urls')),
     path('',include('videoservices.urls')),
     path('',include('users.urls')),
+    path('',include('adminpanel.urls')),
 ]
 
 if settings.DEBUG:

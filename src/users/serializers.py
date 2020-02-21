@@ -65,6 +65,8 @@ class SignupAddSerializer(serializers.ModelSerializer):
                     dob= validated_data.get('dob') if validated_data.get('dob') else None
                     gender= validated_data.get('gender') if validated_data.get('gender') else None
                     phone= validated_data.get('phone') if validated_data.get('phone') else None
+                    country_code= validated_data.get('country_code') if validated_data.get('country_code') else None
+                    dial_code =  validated_data.get('dial_code') if validated_data.get('dial_code') else None
                     password = validated_data.get('password') if validated_data.get('password') else None
                     confirm_password = validated_data.get('confirm_password') if validated_data.get('confirm_password') else None
                     is_phone_verified = validated_data.get('is_phone_verified') if validated_data.get('is_phone_verified') else False
@@ -120,33 +122,39 @@ class SignupAddSerializer(serializers.ModelSerializer):
                                         profile_create,created = Profile.objects.get_or_create(user=user,
                                                                         account=account,image=image,firstname=firstname,
                                                                         lastname=lastname,company_name=company_name,email=email,
-                                                                        dob=dob,gender=gender,phone=phone,child_count=2,is_phone_verified=is_phone_verified)
+                                                                        dob=dob,gender=gender,phone=phone,child_count=2,is_phone_verified=is_phone_verified,
+                                                                        country_code=country_code,dial_code=dial_code)
 
                                     else:    
                                         profile_create,created = Profile.objects.get_or_create(user=user,
                                                                         account=account,firstname=firstname,
                                                                         lastname=lastname,company_name=company_name,email=email,
-                                                                        dob=dob,gender=gender,phone=phone,child_count=2,is_phone_verified=is_phone_verified)
+                                                                        dob=dob,gender=gender,phone=phone,child_count=2,is_phone_verified=is_phone_verified,
+                                                                        country_code=country_code,dial_code=dial_code)
                                 elif account == 'Company':
                                     if image is not None and image is not "":
                                         profile_create,created = Profile.objects.get_or_create(user=user,
                                                                         account=account,image=image,company_name=company_name,email=email,
-                                                                        phone=phone,is_phone_verified=is_phone_verified,address=address)
+                                                                        phone=phone,is_phone_verified=is_phone_verified,address=address,
+                                                                        country_code=country_code,dial_code=dial_code)
                                     else:
                                         profile_create,created = Profile.objects.get_or_create(user=user,
                                                                         account=account,company_name=company_name,email=email,
-                                                                        phone=phone,is_phone_verified=is_phone_verified,address=address)
+                                                                        phone=phone,is_phone_verified=is_phone_verified,address=address,
+                                                                        country_code=country_code,dial_code=dial_code)
                                 else:
                                     if image is not None and image is not "":
                                         profile_create,created = Profile.objects.get_or_create(user=user,
                                                                         account=account,image=image,firstname=firstname,
                                                                         lastname=lastname,company_name=company_name,email=email,
-                                                                        dob=dob,gender=gender,phone=phone,is_phone_verified=is_phone_verified)
+                                                                        dob=dob,gender=gender,phone=phone,is_phone_verified=is_phone_verified,
+                                                                        country_code=country_code,dial_code=dial_code)
                                     else:
                                         profile_create,created = Profile.objects.get_or_create(user=user,
                                                                         account=account,firstname=firstname,
                                                                         lastname=lastname,company_name=company_name,email=email,
-                                                                        dob=dob,gender=gender,phone=phone,is_phone_verified=is_phone_verified)
+                                                                        dob=dob,gender=gender,phone=phone,is_phone_verified=is_phone_verified,
+                                                                        country_code=country_code,dial_code=dial_code)
                                 
                                 # print("user",user.__dict__)
                         else:
@@ -188,13 +196,15 @@ class SignupAddSerializer(serializers.ModelSerializer):
                                     profile_create,created = Profile.objects.get_or_create(user=user,auth_provider=auth_provider,
                                                                     account=account,photoUrl=photoUrl,firstname=firstname,
                                                                     lastname=lastname,company_name=company_name,email=email,
-                                                                    dob=dob,gender=gender,phone=phone,child_count=2,is_phone_verified=is_phone_verified)
+                                                                    dob=dob,gender=gender,phone=phone,child_count=2,is_phone_verified=is_phone_verified,
+                                                                    country_code=country_code,dial_code=dial_code)
 
                                 else:    
                                     profile_create,created = Profile.objects.get_or_create(user=user,auth_provider=auth_provider,
                                                                     account=account,firstname=firstname,
                                                                     lastname=lastname,company_name=company_name,email=email,
-                                                                    dob=dob,gender=gender,phone=phone,child_count=2,is_phone_verified=is_phone_verified)
+                                                                    dob=dob,gender=gender,phone=phone,child_count=2,is_phone_verified=is_phone_verified,
+                                                                    country_code=country_code,dial_code=dial_code)
                             # elif account == 'Company':
                             #     if image is not None and image is not "":
                             #         profile_create,created = Profile.objects.get_or_create(user=user,
@@ -209,12 +219,14 @@ class SignupAddSerializer(serializers.ModelSerializer):
                                     profile_create,created = Profile.objects.get_or_create(user=user,auth_provider=auth_provider,
                                                                     account=account,photoUrl=photoUrl,firstname=firstname,
                                                                     lastname=lastname,company_name=company_name,email=email,
-                                                                    dob=dob,gender=gender,phone=phone,is_phone_verified=is_phone_verified)
+                                                                    dob=dob,gender=gender,phone=phone,is_phone_verified=is_phone_verified,
+                                                                    country_code=country_code,dial_code=dial_code)
                                 else:
                                     profile_create,created = Profile.objects.get_or_create(user=user,auth_provider=auth_provider,
                                                                     account=account,firstname=firstname,
                                                                     lastname=lastname,company_name=company_name,email=email,
-                                                                    dob=dob,gender=gender,phone=phone,is_phone_verified=is_phone_verified)
+                                                                    dob=dob,gender=gender,phone=phone,is_phone_verified=is_phone_verified,
+                                                                    country_code=country_code,dial_code=dial_code)
 
                             # request = {'username':email,'auth_provider':auth_provider}
                             # user = authenticate(request=self.context.get('request'),
@@ -223,6 +235,7 @@ class SignupAddSerializer(serializers.ModelSerializer):
                             # print("login_data",login_data)
                             # # response = super(LoginView, self).post(request, format=None)
                             # print("user",user)
+                validated_data['id'] = profile_create.id
                 validated_data['image'] = profile_create.image
                 validated_data['user']={
                     'user_id':user.__dict__['id'],
@@ -252,20 +265,34 @@ class SignupSubChildUserAddSerializer(serializers.ModelSerializer):
             acc_type = request.user.profile.account
             profile = request.user.profile.id
             print("acc_type",acc_type,profile)
-            image= validated_data.get('image') if validated_data.get('image') else ""
+            image= validated_data.get('image') if validated_data.get('image') else None
             firstname= validated_data.get('firstname') if validated_data.get('firstname') else ""
             lastname= validated_data.get('lastname') if validated_data.get('lastname') else ""
             dob= validated_data.get('dob') if validated_data.get('dob') else None
             gender= validated_data.get('gender') if validated_data.get('gender') else None
             with transaction.atomic():
                 if acc_type == 'Parent':
-                    sub_child = SubChildProfile.objects.create(profile_id=int(profile),firstname=firstname,
-                                                    image=image,lastname=lastname,dob=dob,gender=gender,owned_by=owned_by,created_by=created_by)
+                    if image is not None:
+                        sub_child = SubChildProfile.objects.filter(firstname__iexact=firstname,lastname__iexact=lastname,profile_id=int(profile))
+                        if not sub_child:
+                            SubChildProfile.objects.create(profile_id=int(profile),firstname=firstname,
+                            image=image,lastname=lastname,dob=dob,gender=gender,owned_by=owned_by,created_by=created_by)
+                        else:
+                            raise CustomAPIException(None,'Child Name cannot be same',status_code=status.HTTP_409_CONFLICT)
+                    else:
+                        sub_child = SubChildProfile.objects.filter(firstname__iexact=firstname,lastname__iexact=lastname,profile_id=int(profile))
+                        if not sub_child:
+                            SubChildProfile.objects.create(profile_id=int(profile),firstname=firstname,lastname=lastname,
+                            dob=dob,gender=gender,owned_by=owned_by,created_by=created_by)
+                        else:
+                            raise CustomAPIException(None,'Child Name cannot be same',status_code=status.HTTP_409_CONFLICT)
                     if sub_child:
                         print('sub_child',sub_child)
                         sub_child.__dict__['profile'] = sub_child.profile
                         sub_child.__dict__['image_url'] = request.build_absolute_uri(sub_child.image.url)
                         return sub_child.__dict__
+                    
+
                 else:
                     raise CustomAPIException(None,'Get parent account to use this feature!',status_code=status.HTTP_203_NON_AUTHORITATIVE_INFORMATION)
 
@@ -302,6 +329,7 @@ class ForgotPasswordSerializer(serializers.Serializer):
     Serializer for password forgot.
     """
     phone_no=serializers.CharField(required=True)
+    email_id = serializers.CharField(required=True)
     new_password=serializers.CharField(required=True)
     confirm_password=serializers.CharField(required=True)
     created_by = serializers.CharField(default=serializers.CurrentUserDefault())

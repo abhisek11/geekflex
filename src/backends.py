@@ -20,14 +20,21 @@ class EmailandPhoneAuthBackend(ModelBackend):
              as the user name. """
 		
 		try:
-			user_admin = User.objects.filter(username=username,is_superuser=True)
-			print("username",user_admin)
-			if user_admin:
+			django_admin = User.objects.filter(username=username,is_superuser=True)
+			if django_admin:
 				if username and password:
 					user = User.objects.get(username=username)
 				if user.check_password(password) and self.user_can_authenticate(user):
-					return user					
-			if kwargs['auth_provider'] == 'Kidsclub':
+					return user	
+			elif kwargs['auth_provider'].lower() == 'admin':
+				user_admin = User.objects.filter(username=username,is_superuser=True)
+				print("username",user_admin)
+				if user_admin:
+					if username and password:
+						user = User.objects.get(username=username)
+					if user.check_password(password) and self.user_can_authenticate(user):
+						return user					
+			elif kwargs['auth_provider'].lower() == 'kidsclub':
 				if username and password:
 					user_name = Profile.objects.filter(Q(email=username)| Q(phone=username),auth_provider=kwargs['auth_provider']).values('user__username')
 					print("user_name",user_name)
@@ -50,7 +57,7 @@ class EmailandPhoneAuthBackend(ModelBackend):
 					
 						
 					
-			elif kwargs['auth_provider'] == 'Facebook' or kwargs['auth_provider'] == 'Google': 
+			elif kwargs['auth_provider'].lower() == 'facebook' or kwargs['auth_provider'].lower() == 'google': 
 				if username and password is None:
 					user_name = Profile.objects.filter(Q(email=username)| Q(phone=username),auth_provider=kwargs['auth_provider']).values('user__username')
 					print("user_name",user_name)
