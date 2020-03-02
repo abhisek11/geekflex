@@ -83,6 +83,7 @@ class ProfileOrChannelDetailsSerializer(serializers.ModelSerializer):
     subscriber_counts = serializers.IntegerField(required=False)
     country_details = serializers.DictField(required=False)
     image = serializers.FileField(required=False)
+    verified_user_status=serializers.DictField(required=False)
 
     class Meta:
         model=Profile
@@ -150,22 +151,52 @@ class SubscribeChannelAddSerializer(serializers.ModelSerializer):
 
     class Meta:
         model=Subscription
-        fields=('__all__')
+        fields=('id','profile','subscribe','is_subscribed','subscribe_details','created_by','owned_by','updated_by')
 
     def create(self,validated_data):
         try:
+            created_by= validated_data.get('created_by')
+            owned_by= validated_data.get('owned_by')
+            updated_by = validated_data.get('updated_by')
             profile = validated_data.get('profile')
             subscribe= validated_data.get('subscribe')
             with transaction.atomic():
-                subscribe = Subscription.objects.create(profile=profile,subscribe=subscribe,is_subscribed=True)
-                validated_data['is_subscribed'] =  subscribe.is_subscribed
-                validated_data['id']=subscribe.id
+                subscribed_or_not = Subscription.objects.filter(profile=profile,subscribe=subscribe,is_deleted=False).exists()
+                if subscribed_or_not:
+                    subscribe = Subscription.objects.filter(profile=profile,subscribe=subscribe,is_deleted=False).\
+                        update(is_subscribed=True,updated_by=updated_by)
+                else:
+                    subscribe = Subscription.objects.create(profile=profile,subscribe=subscribe,
+                                is_subscribed=True,created_by=created_by,owned_by=owned_by)
+                
+                validated_data['is_subscribed'] =  True
                 return validated_data
 
         except Exception as e:
             raise e
 
     
+class UnSubscribeChannelAddSerializer(serializers.ModelSerializer):
+    updated_by = serializers.CharField(default=serializers.CurrentUserDefault())
+    class Meta:
+        model=Subscription
+        fields=('id','profile','subscribe','is_subscribed','updated_by','updated_at')
+    
+    def create(self,validated_data):
+        try:
+            profile = validated_data.get('profile')
+            subscribe= validated_data.get('subscribe')
+            updated_by = validated_data.get('updated_by')
+            with transaction.atomic():
+                unsubscribe = Subscription.objects.filter(profile=profile,
+                    subscribe=subscribe,is_deleted=False).\
+                    update(is_subscribed=False,updated_by=updated_by)
+                return validated_data
+
+        except Exception as e:
+            raise e
+
+
 
 class UploadVideoAddSerializer(serializers.ModelSerializer):
     created_by = serializers.CharField(default=serializers.CurrentUserDefault())
@@ -193,13 +224,20 @@ class UploadVideoAddSerializer(serializers.ModelSerializer):
         except Exception as e:
             raise e
 
+class DeleteVideoSerializer(serializers.ModelSerializer):
+    updated_by = serializers.CharField(default=serializers.CurrentUserDefault())
+    owned_by = serializers.CharField(default=serializers.CurrentUserDefault())
+
+    class Meta:
+        model=Video
+        fields=('id','is_deleted','updated_by','title','owned_by')
 class VideoListViewSerializer(serializers.ModelSerializer):
     created_by = serializers.CharField(default=serializers.CurrentUserDefault())
     owned_by = serializers.CharField(default=serializers.CurrentUserDefault())
-    # tags =  serializers.ListField(required=False)
+    action =  serializers.CharField(required=False)
     class Meta:
         model=Video
-        fields=('__all__')
+        exclude=('private_code',)
 
 class TagsListViewSerializer(serializers.ModelSerializer):
     created_by = serializers.CharField(default=serializers.CurrentUserDefault())
@@ -212,6 +250,8 @@ class TagsListViewSerializer(serializers.ModelSerializer):
 class UploadVideoThumbnailAddViewSerializer(serializers.ModelSerializer):
     created_by = serializers.CharField(default=serializers.CurrentUserDefault())
     owned_by = serializers.CharField(default=serializers.CurrentUserDefault())
+    old_thumbnail_list = serializers.ListField(required=False)
+    thumbnail = serializers.FileField(required=False)
     class Meta:
         model=VideoThumbnailDocuments
         fields='__all__'
@@ -247,13 +287,15 @@ class VideoViewsViewAddSerializer(serializers.ModelSerializer):
             ip_address = get_client_ip(request)
             # ip = ip_address(request)
             with transaction.atomic():
-                video_view = VideoViews.objects.create(Profile=profile_id,video=video,
-                                                        ip_address=ip_address,created_by=created_by)
-               
-                # validated_data['video'] =  request.build_absolute_uri(upload.video.url)
+                exist_or_not = VideoViews.objects.filter(Profile=profile_id,video=video,is_deleted=False)
+                if not exist_or_not:
+                    video_view = VideoViews.objects.create(Profile=profile_id,video=video,
+                                                            ip_address=ip_address,created_by=created_by)
+                    validated_data['id']=video_view.id
+                    # validated_data['video'] =  request.build_absolute_uri(upload.video.url)
                 validated_data['profile_id'] =  profile_id
                 validated_data['ip_address'] =  ip_address
-                validated_data['id']=video_view.id
+                
                 return validated_data
 
         except Exception as e:
@@ -299,10 +341,11 @@ class SubChildUserDetailsViewSerializer(serializers.ModelSerializer):
 class ChannelVideoListingViewSerializer(serializers.ModelSerializer):
     created_by = serializers.CharField(default=serializers.CurrentUserDefault())
     owned_by = serializers.CharField(default=serializers.CurrentUserDefault())
-    private_code =  serializers.CharField(required=False)
+    # private_code =  serializers.CharField(required=False)
     class Meta:
         model=Video
-        fields='__all__'
+        # fields=('__all__')
+        exclude=('private_code',)
 
 
 class GenereAddListViewSerializer(serializers.ModelSerializer):

@@ -225,10 +225,10 @@ MSG_NO_DATA="No Data Found"
 MSG_ERROR="Failure"
 # ============= Error Msg configrations =================
 
-# REDIRECT_URL = 'http://166.62.54.122/kidsclub/'
+
 REDIRECT_URL = 'http://192.168.24.129:4200/'
 # REDIRECT_URL = 'https://166.62.54.122/kidsclub/'
 # #=================TESTING AND DEVELOPMENT CONFIGRATION FOR SOCIAL AUTH================================= 
-
+SITE_URL = 'http://192.168.28.123:8000/media/'
 
 #***********************************XXXXXXXX**************************************************************

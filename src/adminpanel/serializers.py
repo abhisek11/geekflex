@@ -13,6 +13,7 @@ from django.db.models.functions import Concat
 from django.db.models import Value
 from threading import Thread  # for threading
 import datetime
+from videoservices.models import *
 from adminpanel.views import *
 
 
@@ -31,12 +32,13 @@ class MenuAddViewSerializer(serializers.ModelSerializer):
             request =  self.context.get('request')
             name = validated_data.get('name')
             url= validated_data.get('url')
+            icon= validated_data.get('icon')
             created_by=validated_data.get('created_by')
             owned_by=validated_data.get('owned_by')
-            parent_id = validated_data.get('parent_id') if validated_data.get('url') else 0
+            parent_id = validated_data.get('parent_id') if validated_data.get('parent_id') else 0
 
             with transaction.atomic():
-                menu_add = AdminMenu.objects.create(name=name,url=url,parent_id=parent_id,
+                menu_add = AdminMenu.objects.create(name=name,url=url,parent_id=parent_id,icon=icon,
                                                     created_by=created_by,owned_by=owned_by)
 
                 return validated_data
@@ -67,11 +69,16 @@ class RoleAddViewSerializer(serializers.ModelSerializer):
                     role_add = Role.objects.create(name=name,created_by=created_by,owned_by=owned_by)
                     for menu in menu_list:
                         print("menu['id']",menu['id'])
+                        is_create=menu['permission']['is_create'] if 'is_create' in menu['permission'] else 0
+                        is_read=menu['permission']['is_read'] if 'is_read' in menu['permission'] else 0
+                        is_delete=menu['permission']['is_delete'] if 'is_delete' in menu['permission'] else 0
+                        is_edit=menu['permission']['is_edit'] if 'is_edit' in menu['permission'] else 0
+
                         role_menu_mapping= RoleMenuMappingTable.objects.create(role=role_add,menu_id=menu['id'],
-                                                                                is_create=menu['permission']['is_create'],
-                                                                                is_read=menu['permission']['is_read'],
-                                                                                is_delete=menu['permission']['is_delete'],
-                                                                                is_edit=menu['permission']['is_edit'],
+                                                                                is_create=is_create,
+                                                                                is_read=is_read,
+                                                                                is_delete=is_delete,
+                                                                                is_edit=is_edit,
                                                                                 created_by=created_by,owned_by=owned_by)
                     return validated_data
                 else:
@@ -177,3 +184,20 @@ class AdminUserListViewSerializer(serializers.ModelSerializer):
     class Meta:
         model=User
         fields=('id','username','first_name','last_name','email','is_active','role','created_by','owned_by')
+
+class MenuOnlyParentListViewSerializer(serializers.ModelSerializer):
+    class Meta:
+        model=AdminMenu
+        fields=('id','name')
+
+class AppUserListViewSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model=Profile
+        fields='__all__'
+
+class AppUserActivateViewSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model=User
+        fields=('id','first_name','last_name','email','is_active','is_superuser')

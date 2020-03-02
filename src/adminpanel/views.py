@@ -51,9 +51,10 @@ class MenuAddView(generics.ListCreateAPIView,mixins.UpdateModelMixin):
             if method.lower() == 'edit':
                 name=request.data['name'] if request.data['name'] else None
                 url=request.data['url']  if request.data['url'] else None
+                icon=request.data['icon']  if request.data['icon'] else None
                 parent_id=request.data['parent_id']  if request.data['parent_id'] else 0
                 menu_update = AdminMenu.objects.filter(id=menu_id,is_deleted=False).\
-                                        update(name=name,url=url,parent_id=parent_id,updated_by=updated_by)
+                                        update(name=name,url=url,parent_id=parent_id,icon=icon,updated_by=updated_by)
                 if menu_update:
                     data = AdminMenu.objects.get(id=menu_id,is_deleted=False)
                     data.__dict__.pop('_state')
@@ -183,6 +184,7 @@ class MenuListView(generics.ListAPIView):
         response = super(self.__class__,self).get(request, *args, **kwargs)
         menu_list = []
         for data in response.data:
+            
             parent_details = AdminMenu.objects.filter(id=data['parent_id']).values('id','name')
             if parent_details:
                 data_dict = {
@@ -196,7 +198,15 @@ class MenuListView(generics.ListAPIView):
                     "name":data['name'],
                 }
             menu_list.append(data_dict)
+
+        parent_menu_list = AdminMenu.objects.filter(~Q(parent_id=0),is_deleted=False).values_list('parent_id',flat=True).distinct()
+        stand_alon_parents = AdminMenu.objects.filter(~Q(id__in=parent_menu_list),parent_id=0,is_deleted=False).values('id','name')
         
+        print("parent_menu_list",parent_menu_list)
+        print("stand_alon_parents",stand_alon_parents)
+        for s_data in stand_alon_parents:
+            menu_list.append(s_data)
+        # for s_data in stand_alon_parents:
         if len(menu_list)>0:
             return Response({'request_status':1,
                                 'results':{
@@ -283,3 +293,88 @@ class AdminUserListView(generics.ListAPIView):
         
         return response
 
+
+class MenuOnlyParentListView(generics.ListAPIView):
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [TokenAuthentication]
+    queryset = AdminMenu.objects.filter(parent_id=0,is_deleted=False)
+    serializer_class = MenuOnlyParentListViewSerializer
+    pagination_class = OnOffPagination
+
+    @response_modify_decorator_list_or_get_after_execution_for_onoff_pagination
+    def get(self, request, *args, **kwargs):
+        return super(self.__class__,self).get(request, *args, **kwargs)
+
+
+class AppUserListView(generics.ListAPIView):
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [TokenAuthentication]
+    queryset = Profile.objects.filter(is_deleted=False)
+    serializer_class = AppUserListViewSerializer
+    pagination_class = OnOffPagination
+    
+
+    def get_queryset(self):
+        account = self.request.query_params.get('account', None)
+        if account:
+            print("account",account)
+            return self.queryset.filter(account=account)
+        else:
+            return self.queryset
+
+
+    @response_modify_decorator_list_or_get_after_execution_for_onoff_pagination
+    def get(self, request, *args, **kwargs):
+        response = super(self.__class__,self).get(request, *args, **kwargs)
+        response1 = response.data['results'] if 'results' in response.data else response.data
+        data_list=[] 
+        for data in response1:
+            print("data['account']",data['account'])
+            if data['account'].lower() != 'company':
+                if data['account'].lower() != 'parent':
+                    data_dict={
+                        'id':data['id'],
+                        'user_id':data['user'],
+                        'firstname':data['firstname'],
+                        'lastname':data['lastname'],
+                        'account':data['account'],
+                        'is_active':User.objects.get(id=data['user']).is_active,
+                    } 
+                    data_list.append(data_dict)
+                else:
+                    data_dict={
+                        'id':data['id'],
+                        'user_id':data['user'],
+                        'firstname':data['firstname'],
+                        'lastname':data['lastname'],
+                        'account':data['account'],
+                        'is_active':User.objects.get(id=data['user']).is_active,
+                    } 
+                    child_data = SubChildProfile.objects.filter(profile=data['id'],is_deleted=False).values('firstname','lastname')
+                    data_dict['children']=child_data
+                    data_list.append(data_dict)
+            else:
+                data_dict={
+                        'id':data['id'],
+                        'user_id':data['user'],
+                        'company_name':data['company_name'],
+                        'account':data['account'],
+                        'is_active':User.objects.get(id=data['user']).is_active,
+                    } 
+                data_list.append(data_dict)
+
+            response.data['results']=data_list
+        print("data_list",data_list)
+        return response
+
+
+class AppUserActivateView(generics.RetrieveUpdateAPIView):
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [TokenAuthentication]
+    queryset = User.objects.all()
+    serializer_class = AppUserActivateViewSerializer
+
+
+    @response_modify_decorator_update
+    def put(self, request, *args, **kwargs):
+        return super(self.__class__,self).put(request, *args, **kwargs)

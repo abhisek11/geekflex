@@ -47,8 +47,8 @@ class VerifiedProfileRequestView(generics.UpdateAPIView):
     def put(self, request, *args, **kwargs):
         return super().put(request, *args, **kwargs)
 class ProfileOrChannelDetailsView(generics.ListAPIView):
-    permission_classes = [IsAuthenticated]
-    authentication_classes = [TokenAuthentication]
+    permission_classes = [AllowAny]
+    # authentication_classes = [TokenAuthentication]
     queryset = Profile.objects.filter(is_deleted=False)
     serializer_class = ProfileOrChannelDetailsSerializer
     pagination_class = OnOffPagination
@@ -63,17 +63,42 @@ class ProfileOrChannelDetailsView(generics.ListAPIView):
 
     @response_modify_decorator_list_or_get_after_execution_for_onoff_pagination
     def get(self, request, *args, **kwargs):
-        response = super(self.__class__,self).get(request, *args, **kwargs)
-        response1 = response.data['results'] if 'results' in response.data else response.data
-        for data in response1:
-            print("data",data)
-            subs_count = Subscription.objects.filter(subscribe=data['id']).\
-                            values_list('profile',flat=True).distinct().count()
-            country_details = CountryCode.objects.filter(id=data['country_code']).values('name','dial_code','code')
-            data['subscriber_counts'] = subs_count if subs_count else 0
-            data['country_details'] = country_details[0] if country_details else {}
-            # print("subscriber_counts",subs_count)
-        return response
+        try:
+            current_user_profile = request.user.profile.id
+            print("current_user_profile",current_user_profile)
+            response = super(self.__class__,self).get(request, *args, **kwargs)
+            response1 = response.data['results'] if 'results' in response.data else response.data
+            for data in response1:
+                # print("data",data)
+                subs_count = Subscription.objects.filter(subscribe=data['id']).\
+                                values_list('profile',flat=True).distinct().count()
+                country_details = CountryCode.objects.filter(id=data['country_code']).values('name','dial_code','code')
+                data['subscriber_counts'] = subs_count if subs_count else 0
+                data['country_details'] = country_details[0] if country_details else {}
+                subscribed_or_not = Subscription.objects.filter(profile=current_user_profile,subscribe=data['id'],is_deleted=False).exists()
+                if subscribed_or_not:
+                    data['is_subscribed']=  Subscription.objects.get(profile=current_user_profile,subscribe=data['id'],is_deleted=False).is_subscribed
+                else:
+                    data['is_subscribed']=False
+                channel_details = Profile.objects.get(id=data['id'])
+                data['verified_user_status']={'status_value':channel_details.verified,
+                                            'status':channel_details.get_verified_display()}
+            return response
+        except Exception:
+            response = super(self.__class__,self).get(request, *args, **kwargs)
+            response1 = response.data['results'] if 'results' in response.data else response.data
+            for data in response1:
+                # print("data",data)
+                subs_count = Subscription.objects.filter(subscribe=data['id']).\
+                                values_list('profile',flat=True).distinct().count()
+                country_details = CountryCode.objects.filter(id=data['country_code']).values('name','dial_code','code')
+                data['subscriber_counts'] = subs_count if subs_count else 0
+                data['country_details'] = country_details[0] if country_details else {}
+                channel_details = Profile.objects.get(id=data['id'])
+                data['verified_user_status']={'status_value':channel_details.verified,
+                                            'status':channel_details.get_verified_display()}
+            return response
+
 
 class SubChildUserDetailsView(generics.ListAPIView):
     permission_classes = [IsAuthenticated] 
@@ -146,7 +171,7 @@ class SubscribeChannelAddView(generics.ListCreateAPIView):
     def get_queryset(self):
         profile = self.request.query_params.get('profile',None)
         if profile is not None:
-            return self.queryset.filter(profile_id=int(profile))
+            return self.queryset.filter(profile_id=int(profile),is_subscribed=True)
         else:
             return self.queryset
 
@@ -165,7 +190,8 @@ class SubscribeChannelAddView(generics.ListCreateAPIView):
                     'lastname': subscribe_details.lastname,
                     'image': request.build_absolute_uri(subscribe_details.image.url) if subscribe_details.image else None,
                     'subscribed_count':Subscription.objects.filter(subscribe=subscribe_details.id).\
-                        values_list('profile',flat=True).distinct().count()
+                        values_list('profile',flat=True).distinct().count(),
+                    'verified':subscribe_details.verified,
                     
                 }
             else:
@@ -176,12 +202,23 @@ class SubscribeChannelAddView(generics.ListCreateAPIView):
                     'address': subscribe_details.address,
                     'image': request.build_absolute_uri(subscribe_details.image.url) if subscribe_details.image else None,
                     'subscribed_count':Subscription.objects.filter(subscribe=subscribe_details.id).\
-                        values_list('profile',flat=True).distinct().count()
+                        values_list('profile',flat=True).distinct().count(),
+                    'verified':subscribe_details.verified,
                     
                 }
 
         print("response",response)
         return response
+
+class UnSubscribeChannelAddView(generics.ListCreateAPIView):
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [TokenAuthentication]
+    queryset = Subscription.objects.filter(is_deleted=False)
+    serializer_class = UnSubscribeChannelAddSerializer
+
+    @response_modify_decorator_post
+    def post(self, request, *args, **kwargs):
+        return super(self.__class__,self).post(request, *args, **kwargs)
 
 class UploadVideoAddView(generics.ListCreateAPIView,mixins.UpdateModelMixin):
     permission_classes = [IsAuthenticated]
@@ -230,8 +267,18 @@ class UploadVideoAddView(generics.ListCreateAPIView,mixins.UpdateModelMixin):
                                 update(title=title,description=description,featured_video=featured_video,
                                 category=category,private_video=private_video,private_code=private_code,
                                 term_and_conditions=term_and_conditions,age_range=age_range,updated_by=updated_by)
-        for tag in tags:
-            VideoTags.objects.create(video_id=vid_id,tags=tag)
+        
+        previous_tag_list = VideoTags.objects.filter(video_id=vid_id,is_deleted=False).values_list('tags',flat=True)
+        print("previous_tag_list",previous_tag_list)
+        deleted_tag_list = list(set(previous_tag_list)-set(tags))
+        print("deleted_tag_list",deleted_tag_list)
+        added_tag_list = list(set(tags)-set(previous_tag_list))
+        print("added_tag_list",added_tag_list)
+        if deleted_tag_list:
+            delete_menu = VideoTags.objects.filter(video_id=vid_id,tags__in=deleted_tag_list).update(is_deleted=True)
+        if added_tag_list:
+            for tag in added_tag_list:
+                VideoTags.objects.create(video_id=vid_id,tags=tag)
 
         if video_details_update:
             data = Video.objects.get(id=vid_id,is_deleted=False)
@@ -246,64 +293,139 @@ class UploadVideoAddView(generics.ListCreateAPIView,mixins.UpdateModelMixin):
                             'msg': 'fail',
                             "request_status": 0})
 
-class VideoListView(generics.ListCreateAPIView,mixins.UpdateModelMixin):
+class DeleteVideoView(generics.RetrieveUpdateAPIView):
     permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication]
     queryset = Video.objects.filter(is_deleted=False)
+    serializer_class = DeleteVideoSerializer
+
+    @response_modify_decorator_update
+    def put(self, request, *args, **kwargs):
+        return super(self.__class__,self).put(request, *args, **kwargs)
+
+class VideoListView(generics.ListCreateAPIView,mixins.UpdateModelMixin):
+    permission_classes = [AllowAny]
+    # authentication_classes = [TokenAuthentication]
+    queryset = Video.objects.filter(is_deleted=False)
+    serializer_class = VideoListViewSerializer
 
     def post(self, request, *args, **kwargs):
         # tag_name = self.request.query_params.get('tag_name', None)
         vid_id = request.data.get('vid_id')
+        action = request.data.get('action') if request.data.get('action') else None
         print("vid_id",vid_id)
+        
         # response = super(self.__class__,self).get(request, *args, **kwargs)
         video_details = self.queryset.filter(id=vid_id)
         data_dict = {}
         for data in video_details:
-            data_dict['id']=data.id
-            data_dict['channel']=data.channel.id
-            data_dict['video']=request.build_absolute_uri(data.video.url)
-            data_dict['title']=data.title
-            data_dict['description']=data.description
-            data_dict['category']={'id':data.category.id,'name':data.category.name}
-            data_dict['private_video']=data.private_video
-            data_dict['featured_video']=data.featured_video
-            data_dict['term_and_conditions']=data.term_and_conditions
-            data_dict['age_range']=data.age_range
-            data_dict['is_deleted']=data.is_deleted
+            if action is not None and action.lower() == 'edit':
+                data_dict['id']=data.id
+                data_dict['channel']=data.channel.id
+                data_dict['video']=request.build_absolute_uri(data.video.url)
+                data_dict['title']=data.title
+                data_dict['description']=data.description
+                data_dict['category']={'id':data.category.id,'name':data.category.name}
+                data_dict['private_video']=data.private_video
+                if data.private_video == True:
+                    print("private_video",data.private_video)
+                    data_dict['private_code']=data.private_code
+
+                data_dict['featured_video']=data.featured_video
+                data_dict['term_and_conditions']=data.term_and_conditions
+                data_dict['age_range']=data.age_range
+                data_dict['is_deleted']=data.is_deleted
+            else:
+                data_dict['id']=data.id
+                data_dict['channel']=data.channel.id
+                data_dict['video']=request.build_absolute_uri(data.video.url)
+                data_dict['title']=data.title
+                data_dict['description']=data.description
+                data_dict['category']={'id':data.category.id,'name':data.category.name}
+                data_dict['private_video']=data.private_video
+                data_dict['featured_video']=data.featured_video
+                data_dict['term_and_conditions']=data.term_and_conditions
+                data_dict['age_range']=data.age_range
+                data_dict['is_deleted']=data.is_deleted
+
+
+            
             link_list = []
-            thumbnail = VideoThumbnailDocuments.objects.filter(video=data.id)
+            thumbnail = VideoThumbnailDocuments.objects.filter(video=data.id,is_deleted=False)
             for link in thumbnail:
                 link_list.append(request.build_absolute_uri(link.thumbnail.url))
             
             data_dict['thumbnail_stack']=link_list
             channel_details = Profile.objects.get(id=data.channel.id)
+            if request.user.is_authenticated:
+                current_user_profile = request.user.profile.id
+                print("current_user_profile",current_user_profile)
+                subscribed_or_not = Subscription.objects.filter(profile=current_user_profile,subscribe=data.channel.id,is_deleted=False).exists()
 
-            if channel_details.account !='Company':
-                data_dict['channel_details']={
-                    'id':channel_details.id,
-                    'user_id':channel_details.user_id,
-                    'firstname':channel_details.firstname,
-                    'lastname': channel_details.lastname,
-                    'image': request.build_absolute_uri(channel_details.image.url) if channel_details.image else None,
-                    'subscribed_count':Subscription.objects.filter(subscribe=channel_details.id).\
-                        values_list('profile',flat=True).distinct().count()
-                    
-                }
+
+                if channel_details.account !='Company':
+                    data_dict['channel_details']={
+                        'id':channel_details.id,
+                        'user_id':channel_details.user_id,
+                        'firstname':channel_details.firstname,
+                        'lastname': channel_details.lastname,
+                        'image': request.build_absolute_uri(channel_details.image.url) if channel_details.image else None,
+                        'subscribed_count':Subscription.objects.filter(subscribe=channel_details.id).\
+                            values_list('profile',flat=True).distinct().count(),
+                        'is_subscribed':  Subscription.objects.get(profile=current_user_profile,
+                                        subscribe=data.channel.id,is_deleted=False).is_subscribed if subscribed_or_not
+                                        else False,
+                        'verified':channel_details.verified,
+                        
+                        
+                    }
+                else:
+                    data_dict['channel_details']={
+                        'id':channel_details.id,
+                        'user_id':channel_details.user_id,
+                        'company_name': channel_details.company_name,
+                        'address': channel_details.address,
+                        'image': request.build_absolute_uri(channel_details.image.url) if channel_details.image else None,
+                        'subscribed_count':Subscription.objects.filter(subscribe=channel_details.id).\
+                            values_list('profile',flat=True).distinct().count(),
+                        'is_subscribed':Subscription.objects.get(profile=current_user_profile,
+                                        subscribe=data.channel.id,is_deleted=False).is_subscribed if subscribed_or_not
+                                        else False,
+                        'verified':channel_details.verified,
+                        
+                        
+                    }
             else:
-                data_dict['channel_details']={
-                    'id':channel_details.id,
-                    'user_id':channel_details.user_id,
-                    'company_name': channel_details.company_name,
-                    'address': channel_details.address,
-                    'image': request.build_absolute_uri(channel_details.image.url) if channel_details.image else None,
-                    'subscribed_count':Subscription.objects.filter(subscribe=channel_details.id).\
-                        values_list('profile',flat=True).distinct().count()
-                    
-                }
+                if channel_details.account !='Company':
+                    data_dict['channel_details']={
+                        'id':channel_details.id,
+                        'user_id':channel_details.user_id,
+                        'firstname':channel_details.firstname,
+                        'lastname': channel_details.lastname,
+                        'image': request.build_absolute_uri(channel_details.image.url) if channel_details.image else None,
+                        'subscribed_count':Subscription.objects.filter(subscribe=channel_details.id).\
+                            values_list('profile',flat=True).distinct().count(),
+                        'is_subscribed':False
+                        
+                        
+                    }
+                else:
+                    data_dict['channel_details']={
+                        'id':channel_details.id,
+                        'user_id':channel_details.user_id,
+                        'company_name': channel_details.company_name,
+                        'address': channel_details.address,
+                        'image': request.build_absolute_uri(channel_details.image.url) if channel_details.image else None,
+                        'subscribed_count':Subscription.objects.filter(subscribe=channel_details.id).\
+                            values_list('profile',flat=True).distinct().count(),
+                        'is_subscribed':False
+                        
+                        
+                    }
             view_auth_profile = VideoViews.objects.filter(~Q(Profile=0),video=data.id).values('Profile').distinct().count()
             view_guest_profile = VideoViews.objects.filter(Profile=0,video=data.id).values('ip_address').distinct().count()
             data_dict['views']=view_auth_profile+view_guest_profile
-            data_dict['tags']=VideoTags.objects.filter(video=vid_id).values_list('tags',flat=True).distinct()
+            data_dict['tags']=VideoTags.objects.filter(video=vid_id,is_deleted=False).values_list('tags',flat=True).distinct()
         if len(data_dict)>0:
             return Response({'request_status':1,
                                 'results':data_dict,
@@ -316,6 +438,101 @@ class VideoListView(generics.ListCreateAPIView,mixins.UpdateModelMixin):
                                 'msg':'No Data Found'
                                 },
                                 status=status.HTTP_200_OK)
+
+
+class WatchHistoryVideoListView(generics.ListCreateAPIView):
+    permission_classes = [AllowAny]
+    authentication_classes = [TokenAuthentication]
+    queryset = VideoViews.objects.filter(is_deleted=False)
+
+    def post(self, request, *args, **kwargs):
+        profile_id = request.user.profile.id
+        vid_id = self.queryset.filter(Profile=profile_id).values_list('video',flat=True).distinct()
+        print("vid_id",list(vid_id))
+        watch_history=[]
+        video_details = Video.objects.filter(id__in=list(vid_id),is_deleted=False)
+        print("video_details",video_details)
+        
+        for data in video_details:
+            data_dict = {}
+            print("data",data.channel.id,data.title)
+            data_dict['id']=data.id
+            data_dict['channel']=data.channel.id
+            data_dict['video']=request.build_absolute_uri(data.video.url)
+            data_dict['title']=data.title
+            data_dict['description']=data.description
+            data_dict['category']={'id':data.category.id,'name':data.category.name}
+            data_dict['private_video']=data.private_video
+            data_dict['featured_video']=data.featured_video
+            data_dict['term_and_conditions']=data.term_and_conditions
+            data_dict['age_range']=data.age_range
+            data_dict['is_deleted']=data.is_deleted
+            
+            link_list = []
+            thumbnail = VideoThumbnailDocuments.objects.filter(video=data.id)
+            for link in thumbnail:
+                link_list.append(request.build_absolute_uri(link.thumbnail.url))
+            
+            data_dict['thumbnail_stack']=link_list
+            channel_details = Profile.objects.get(id=data.channel.id)
+
+            current_user_profile = request.user.profile.id
+            print("current_user_profile",current_user_profile)
+            subscribed_or_not = Subscription.objects.filter(profile=current_user_profile,subscribe=data.channel.id,is_deleted=False).exists()
+
+
+            if channel_details.account !='Company':
+                data_dict['channel_details']={
+                    'id':channel_details.id,
+                    'user_id':channel_details.user_id,
+                    'firstname':channel_details.firstname,
+                    'lastname': channel_details.lastname,
+                    'image': request.build_absolute_uri(channel_details.image.url) if channel_details.image else None,
+                    'subscribed_count':Subscription.objects.filter(subscribe=channel_details.id).\
+                        values_list('profile',flat=True).distinct().count(),
+                    'is_subscribed':  Subscription.objects.get(profile=current_user_profile,
+                                    subscribe=data.channel.id,is_deleted=False).is_subscribed if subscribed_or_not
+                                    else False,
+                    'verified':channel_details.verified,
+                    
+                    
+                }
+            else:
+                data_dict['channel_details']={
+                    'id':channel_details.id,
+                    'user_id':channel_details.user_id,
+                    'company_name': channel_details.company_name,
+                    'address': channel_details.address,
+                    'image': request.build_absolute_uri(channel_details.image.url) if channel_details.image else None,
+                    'subscribed_count':Subscription.objects.filter(subscribe=channel_details.id).\
+                        values_list('profile',flat=True).distinct().count(),
+                    'is_subscribed':Subscription.objects.get(profile=current_user_profile,
+                                    subscribe=data.channel.id,is_deleted=False).is_subscribed if subscribed_or_not
+                                    else False,
+                    'verified':channel_details.verified,
+                    
+                    
+                }
+            
+            view_auth_profile = VideoViews.objects.filter(~Q(Profile=0),video=data.id).values('Profile').distinct().count()
+            view_guest_profile = VideoViews.objects.filter(Profile=0,video=data.id).values('ip_address').distinct().count()
+            data_dict['views']=view_auth_profile+view_guest_profile
+            data_dict['tags']=VideoTags.objects.filter(video=data.id).values_list('tags',flat=True).distinct()
+            watch_history.append(data_dict)
+        print("watch_history",watch_history)
+        if len(watch_history)>0:
+            return Response({'request_status':1,
+                                'results':watch_history,
+                                'msg':'success'
+                                },
+                                status=status.HTTP_200_OK)
+        else:
+            return Response({'request_status':0,
+                                'results':[],
+                                'msg':'No Data Found'
+                                },
+                                status=status.HTTP_200_OK)
+
 
 class TagsListView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]
@@ -358,11 +575,55 @@ class TagsListView(generics.ListCreateAPIView):
         
 
 
-class UploadVideoThumbnailAddView(generics.ListCreateAPIView):
+class UploadVideoThumbnailAddView(generics.ListCreateAPIView,mixins.UpdateModelMixin):
     permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication]
     queryset = VideoThumbnailDocuments.objects.filter(is_deleted=False)
     serializer_class = UploadVideoThumbnailAddViewSerializer
+
+    @response_modify_decorator_post
+    def post(self, request, *args, **kwargs):
+        return super().post(request, *args, **kwargs)
+
+    def put(self, request, *args, **kwargs):
+        try:
+            vid_id = self.request.query_params.get('vid_id', None)
+            updated_by=request.user
+            with transaction.atomic():
+                print("thumbnail",request.data)
+                
+                request.data._mutable =True # Making Querydict Mutable as for requirement Please use with caution 
+                old_thumbnail_list=list(request.data.pop('old_thumbnail_list')) if request.data.get('old_thumbnail_list') else []
+                # old_thumbnail_list=old_thumbnail_list.split(',')
+                print("old_thumbnail_list",old_thumbnail_list,type(old_thumbnail_list))
+                from django.conf import settings
+                host = settings.SITE_URL
+                old_thumbnail_list_wo_domail=[x[len(host):] for x in old_thumbnail_list if host in x]
+                print("old_thumbnail_list_wo_domail",old_thumbnail_list_wo_domail)
+                previous_image_url = VideoThumbnailDocuments.objects.filter(video=vid_id,is_deleted=False).values_list('thumbnail',flat=True)
+                print("previous_image_url",previous_image_url)
+                deleted_image_url = list(set(previous_image_url)-set(old_thumbnail_list_wo_domail))
+                delete_image = VideoThumbnailDocuments.objects.filter(video=vid_id,thumbnail__in=deleted_image_url).update(is_deleted=True)
+                print("sonme test ",request.data.get('thumbnail'))
+                list_data_image=list(request.data.pop('thumbnail')) if request.data.get('thumbnail') else []
+                print("list_data_image",list_data_image)
+                request.data._mutable =False # restoring Querydict imMutable as for requirement Please use with caution
+                upload=None
+                if list_data_image:
+                    for img in list_data_image:
+                        upload = VideoThumbnailDocuments.objects.create(video_id=vid_id,thumbnail=img)
+                
+                if upload or delete_image or old_thumbnail_list:
+                    return Response({'results': VideoThumbnailDocuments.objects.filter(video=vid_id,is_deleted=False).values_list('thumbnail',flat=True),
+                                        'msg': 'success',
+                                        "request_status": 1})
+                else:
+                    return Response({'results': [],
+                                    'msg': 'fail',
+                                    "request_status": 0})
+        except Exception as e:
+            raise e
+
 class VideoListingGenereView(generics.ListAPIView):
 
     permission_classes = [AllowAny]
@@ -374,14 +635,18 @@ class VideoListingGenereView(generics.ListAPIView):
 
     def get_queryset(self):
         category = self.request.query_params.get('category',None)
-        return self.queryset.filter(category__name__iexact=category)
+        if category:
+            return self.queryset.filter(category__name__iexact=category)
+        else:
+            return self.queryset
+
 
     @response_modify_decorator_list_or_get_after_execution_for_pagination
     def get(self, request, *args, **kwargs):
         response = super(self.__class__,self).get(request, *args, **kwargs)
         for data in response.data['results']:
             link_list = []
-            thumbnail = VideoThumbnailDocuments.objects.filter(video=data['id'])
+            thumbnail = VideoThumbnailDocuments.objects.filter(video=data['id'],is_deleted=False)
             for link in thumbnail:
                 link_list.append(request.build_absolute_uri(link.thumbnail.url))
             data['thumbnail_stack']=link_list
@@ -402,9 +667,10 @@ class VideoListingGenereView(generics.ListAPIView):
                     'user_id':channel_details.user_id,
                     'firstname':channel_details.firstname,
                     'lastname': channel_details.lastname,
-                    'image': request.build_absolute_uri(channel_details.image.url),
+                    'image': request.build_absolute_uri(channel_details.image.url) if channel_details.image else None,
                     'subscribed_count':Subscription.objects.filter(subscribe=channel_details.id).\
-                        values_list('profile',flat=True).distinct().count()
+                        values_list('profile',flat=True).distinct().count(),
+                    'verified':channel_details.verified,
                     
                 }
             else:
@@ -413,9 +679,10 @@ class VideoListingGenereView(generics.ListAPIView):
                     'user_id':channel_details.user_id,
                     'company_name': channel_details.company_name,
                     'address': channel_details.address,
-                    'image': request.build_absolute_uri(channel_details.image.url),
+                    'image': request.build_absolute_uri(channel_details.image.url) if channel_details.image else None,
                     'subscribed_count':Subscription.objects.filter(subscribe=channel_details.id).\
-                        values_list('profile',flat=True).distinct().count()
+                        values_list('profile',flat=True).distinct().count(),
+                    'verified':channel_details.verified,
                     
                 }
             view_auth_profile = VideoViews.objects.filter(~Q(Profile=0),video=data['id']).values('Profile').distinct().count()
@@ -440,7 +707,7 @@ class VideoViewsViewAdd(generics.ListCreateAPIView):
 class HomeVideoListingView(generics.ListAPIView):
 
     permission_classes = [AllowAny]
-    authentication_classes = []
+    # authentication_classes = []
     pagination_class = OnOffPagination
     queryset = Video.objects.filter(is_deleted=False).order_by('-id')
     serializer_class = HomeVideoListingViewSerializer
@@ -462,7 +729,7 @@ class HomeVideoListingView(generics.ListAPIView):
         response = super(self.__class__,self).get(request, *args, **kwargs)
         for data in response.data['results']:
             link_list = []
-            thumbnail = VideoThumbnailDocuments.objects.filter(video=data['id'])
+            thumbnail = VideoThumbnailDocuments.objects.filter(video=data['id'],is_deleted=False)
             for link in thumbnail:
                 link_list.append(request.build_absolute_uri(link.thumbnail.url))
             data['thumbnail_stack']=link_list
@@ -476,7 +743,8 @@ class HomeVideoListingView(generics.ListAPIView):
                     'lastname': channel_details.lastname,
                     'image': request.build_absolute_uri(channel_details.image.url) if channel_details.image else None,
                     'subscribed_count':Subscription.objects.filter(subscribe=channel_details.id).\
-                        values_list('profile',flat=True).distinct().count()
+                        values_list('profile',flat=True).distinct().count(),
+                    'verified':channel_details.verified,
                     
                 }
             else:
@@ -487,7 +755,8 @@ class HomeVideoListingView(generics.ListAPIView):
                     'address': channel_details.address,
                     'image': request.build_absolute_uri(channel_details.image.url) if channel_details.image else None,
                     'subscribed_count':Subscription.objects.filter(subscribe=channel_details.id).\
-                        values_list('profile',flat=True).distinct().count()
+                        values_list('profile',flat=True).distinct().count(),
+                    'verified':channel_details.verified,
                     
                 }
             view_auth_profile = VideoViews.objects.filter(~Q(Profile=0),video=data['id']).values('Profile').distinct().count()
@@ -520,7 +789,7 @@ class HomeVideoListingAuthView(generics.ListAPIView):
         response = super(self.__class__,self).get(request, *args, **kwargs)
         for data in response.data['results']:
             link_list = []
-            thumbnail = VideoThumbnailDocuments.objects.filter(video=data['id'])
+            thumbnail = VideoThumbnailDocuments.objects.filter(video=data['id'],is_deleted=False)
             for link in thumbnail:
                 link_list.append(request.build_absolute_uri(link.thumbnail.url))
             data['thumbnail_stack']=link_list
@@ -557,7 +826,7 @@ class HomeVideoListingAuthView(generics.ListAPIView):
 class ChannelVideoListingView(generics.ListAPIView):
 
     permission_classes = [AllowAny]
-    authentication_classes = [TokenAuthentication]
+    # authentication_classes = [TokenAuthentication]
     pagination_class = CSPageNumberPagination
     queryset = Video.objects.filter(is_deleted=False,updated_by__isnull=False,
                 title__isnull=False,description__isnull=False).order_by('-id')
@@ -573,7 +842,7 @@ class ChannelVideoListingView(generics.ListAPIView):
         response = super(self.__class__,self).get(request, *args, **kwargs)
         for data in response.data['results']:
             link_list = []
-            thumbnail = VideoThumbnailDocuments.objects.filter(video=data['id'])
+            thumbnail = VideoThumbnailDocuments.objects.filter(video=data['id'],is_deleted=False)
             for link in thumbnail:
                 link_list.append(request.build_absolute_uri(link.thumbnail.url))
             
@@ -588,7 +857,8 @@ class ChannelVideoListingView(generics.ListAPIView):
                     'lastname': channel_details.lastname,
                     'image': request.build_absolute_uri(channel_details.image.url) if channel_details.image else None,
                     'subscribed_count':Subscription.objects.filter(subscribe=channel_details.id).\
-                        values_list('profile',flat=True).distinct().count()
+                        values_list('profile',flat=True).distinct().count(),
+                    'verified':channel_details.verified,
                     
                 }
             else:
@@ -599,7 +869,8 @@ class ChannelVideoListingView(generics.ListAPIView):
                     'address': channel_details.address,
                     'image': request.build_absolute_uri(channel_details.image.url) if channel_details.image else None,
                     'subscribed_count':Subscription.objects.filter(subscribe=channel_details.id).\
-                        values_list('profile',flat=True).distinct().count()
+                        values_list('profile',flat=True).distinct().count(),
+                    'verified':channel_details.verified,
                     
                 }
             view_auth_profile = VideoViews.objects.filter(~Q(Profile=0),video=data['id']).values('Profile').distinct().count()
@@ -654,8 +925,11 @@ class GenereAddListView(generics.ListCreateAPIView,mixins.UpdateModelMixin):
         with transaction.atomic():
             if method.lower() == 'edit':
                 name=request.data['name'] if request.data['name'] else None
+                icon=request.data['icon'] if request.data['icon'] else None
+                url=request.data['url'] if request.data['url'] else None
                 genere_update = Genere.objects.filter(id=cat_id,is_deleted=False).\
-                                        update(name=name,updated_by=updated_by)
+                                        update(name=name,icon=icon,url=url,
+                                        updated_by=updated_by)
                 if genere_update:
                     data = Genere.objects.get(id=cat_id,is_deleted=False)
                     data.__dict__.pop('_state')
@@ -683,13 +957,13 @@ class GenereAddListView(generics.ListCreateAPIView,mixins.UpdateModelMixin):
 
 
 class CatagoryListView(generics.ListAPIView):
-    permission_classes = [IsAuthenticated]
-    authentication_classes = [TokenAuthentication]
+    permission_classes = [AllowAny]
+    # authentication_classes = [TokenAuthentication]
     queryset = Genere.objects.filter(is_deleted=False)
 
     def get(self, request, *args, **kwargs):
 
-        genere_list = Genere.objects.filter().values('id','name').distinct()
+        genere_list = Genere.objects.filter().values('id','name','url','icon').distinct()
         if len(genere_list)>0:
             return Response({'request_status':1,
                                 'results':{
@@ -706,3 +980,32 @@ class CatagoryListView(generics.ListAPIView):
                                     },
                                 },
                                 status=status.HTTP_200_OK)
+
+class PrivateVideoCheckView(generics.ListCreateAPIView):
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [TokenAuthentication]
+    queryset = Video.objects.filter(is_deleted=False)
+
+    def post(self, request, format=None):
+        try:
+            with transaction.atomic():
+                vid_id = request.data["vid_id"]
+                private_code = request.data["private_code"]
+                valid_or_not = self.queryset.filter(id=vid_id,private_code=private_code).exists()
+                print("valid_or_not",valid_or_not)
+                if valid_or_not == False:
+                    return Response({'request_status': 0,
+                            'results':{
+                                'msg':'code does not match'
+                                },
+                            },
+                            status=status.HTTP_200_OK)
+                else:
+                    return Response({'request_status': 1,
+                            'results':{
+                                'msg':'success'
+                                },
+                            },
+                            status=status.HTTP_200_OK)
+        except Exception as e:
+            raise e

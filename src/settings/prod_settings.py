@@ -52,7 +52,8 @@ INSTALLED_APPS = [
     'videoservices',
     'mailapp',
     'smsapp',
-    'corsheaders'
+    'corsheaders',
+    'adminpanel'
 ]
 
 REST_FRAMEWORK = {
@@ -223,34 +224,8 @@ MSG_NO_DATA="No Data Found"
 MSG_ERROR="Failure"
 # ============= Error Msg configrations =================
 
-# #=================TESTING AND DEVELOPMENT CONFIGRATION FOR SOCIAL AUTH================================= 
-# # Facebook configuration
-# SOCIAL_AUTH_FACEBOOK_KEY = ''
-# SOCIAL_AUTH_FACEBOOK_SECRET = ''
+REDIRECT_URL = 'http://166.62.54.122/kidsclub/'
+#REDIRECT_URL = 'http://192.168.24.129:4200/'
+# REDIRECT_URL = 'https://166.62.54.122/kidsclub/'
 
-# # Define SOCIAL_AUTH_FACEBOOK_SCOPE to get extra permissions from Facebook.
-# # Email is not sent by default, to get it, you must request the email permission.
-# SOCIAL_AUTH_FACEBOOK_SCOPE = ['email']
-
-# SOCIAL_AUTH_FACEBOOK_PROFILE_EXTRA_PARAMS = {       # add this
-#       'fields': 'id, name, email, picture.type(large), link'
-#     }
-# SOCIAL_AUTH_FACEBOOK_EXTRA_DATA = [                 # add this
-#         ('name', 'name'),
-#         ('email', 'email'),
-#         ('picture', 'picture'),
-#         ('link', 'profile_url'),
-#     ]
-
-# SOCIAL_AUTH_PIPELINE = (
-#     'social_core.pipeline.social_auth.social_details',
-#     'social_core.pipeline.social_auth.social_uid',
-#     'social_core.pipeline.social_auth.auth_allowed',
-#     'social_core.pipeline.social_auth.social_user',
-#     'social_core.pipeline.social_auth.associate_user',
-#     'social_core.pipeline.social_auth.load_extra_data',
-#     'social_core.pipeline.user.user_details',
-#     # 'users.social_auth_pipeline.create_user_by_type', #custome pipline during the authentication to create user with custome details
-# )
-
-#***********************************XXXXXXXX**************************************************************
+SITE_URL = 'http://148.72.41.78:8002/media/'

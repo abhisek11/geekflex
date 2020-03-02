@@ -278,14 +278,14 @@ class SignupSubChildUserAddSerializer(serializers.ModelSerializer):
                             SubChildProfile.objects.create(profile_id=int(profile),firstname=firstname,
                             image=image,lastname=lastname,dob=dob,gender=gender,owned_by=owned_by,created_by=created_by)
                         else:
-                            raise CustomAPIException(None,'Child Name cannot be same',status_code=status.HTTP_409_CONFLICT)
+                            raise CustomAPIException(None,'Child Name Already exist',status_code=status.HTTP_409_CONFLICT)
                     else:
                         sub_child = SubChildProfile.objects.filter(firstname__iexact=firstname,lastname__iexact=lastname,profile_id=int(profile))
                         if not sub_child:
                             SubChildProfile.objects.create(profile_id=int(profile),firstname=firstname,lastname=lastname,
                             dob=dob,gender=gender,owned_by=owned_by,created_by=created_by)
                         else:
-                            raise CustomAPIException(None,'Child Name cannot be same',status_code=status.HTTP_409_CONFLICT)
+                            raise CustomAPIException(None,'Child Name Already exist',status_code=status.HTTP_409_CONFLICT)
                     if sub_child:
                         print('sub_child',sub_child)
                         sub_child.__dict__['profile'] = sub_child.profile

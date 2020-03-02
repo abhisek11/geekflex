@@ -1,0 +1,11 @@
+version: "2"
+services:
+  python:
+    image: python:3.6.9
+    volumes:
+      - ./app:/src
+    ports:
+      - 8002:8002
+    # command: sleep infinity
+    # command: ["pip install -r requirements.txt" , "python manage.py runserver"]
+    

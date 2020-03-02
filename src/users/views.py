@@ -36,8 +36,8 @@ from threading import Thread  # for threading
 import datetime
 from smsapp.views import *
 from django.contrib.auth import login
-from rest_framework.authtoken.serializers import AuthTokenSerializer
-from knox.views import LoginView as KnoxLoginView
+from AuthTokenSerializer import *
+from knox_views.views import LoginView as KnoxLoginView
 from django.contrib.sites.shortcuts import get_current_site
 from django.utils.encoding import force_bytes, force_text
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
@@ -263,34 +263,57 @@ class AuthCheckerView(generics.ListAPIView):
         print("request",request.user)
         data={}
         user = request.user
+        is_active=  request.user.is_active
         username = request.user.username
-        
-        # token = request.headers['Authorization']
-        # print("token",token)
-        user_detials = Profile.objects.get(user=user)
-        # data['token'] = token
-        data['username'] = username
-        if user_detials.account != 'Company':
-            if user_detials.auth_provider != 'Kidsclub':
-                data['user_details']={
-                        "user_id":user_detials.user.id,
-                        "profile_id":user_detials.id,
-                        "user": user_detials.user.username,
-                        "account": user_detials.account,
-                        "photoUrl": user_detials.photoUrl,
-                        "firstname":user_detials.firstname,
-                        "lastname": user_detials.lastname,
-                        "email": user_detials.email,
-                        "dob": user_detials.dob,
-                        "gender":user_detials.gender,
-                        "phone":user_detials.phone,
-                        "country_code":user_detials.country_code.id,
-                        "dial_code":user_detials.dial_code,
-                        "verified_user_status":{'status_value':user_detials.verified,'status':user_detials.get_verified_display()},
-                        "child_count":user_detials.child_count,
-                        'subscribed_count':Subscription.objects.filter(subscribe=user_detials.id).\
-                        values_list('profile',flat=True).distinct().count()
-                    }
+        if is_active == True:
+            # token = request.headers['Authorization']
+            # print("token",token)
+            user_detials = Profile.objects.get(user=user)
+            # data['token'] = token
+            data['username'] = username
+            if user_detials.account != 'Company':
+                if user_detials.auth_provider != 'Kidsclub':
+                    data['user_details']={
+                            "user_id":user_detials.user.id,
+                            "profile_id":user_detials.id,
+                            "user": user_detials.user.username,
+                            "account": user_detials.account,
+                            "photoUrl": user_detials.photoUrl,
+                            "firstname":user_detials.firstname,
+                            "lastname": user_detials.lastname,
+                            "email": user_detials.email,
+                            "dob": user_detials.dob,
+                            "gender":user_detials.gender,
+                            "phone":user_detials.phone,
+                            'is_active':is_active,
+                            "country_code":user_detials.country_code.id,
+                            "dial_code":user_detials.dial_code,
+                            "verified_user_status":{'status_value':user_detials.verified,'status':user_detials.get_verified_display()},
+                            "child_count":user_detials.child_count,
+                            'subscribed_count':Subscription.objects.filter(subscribe=user_detials.id).\
+                            values_list('profile',flat=True).distinct().count()
+                        }
+                else:
+                    data['user_details']={
+                            "user_id":user_detials.user.id,
+                            "profile_id":user_detials.id,
+                            "user": user_detials.user.username,
+                            "account": user_detials.account,
+                            "image": request.build_absolute_uri(user_detials.image.url) if user_detials.image else None,
+                            "firstname":user_detials.firstname,
+                            "lastname": user_detials.lastname,
+                            "email": user_detials.email,
+                            "dob": user_detials.dob,
+                            "gender":user_detials.gender,
+                            'is_active':is_active,
+                            "phone":user_detials.phone,
+                            "country_code":user_detials.country_code.id,
+                            "dial_code":user_detials.dial_code,
+                            "verified_user_status":{'status_value':user_detials.verified,'status':user_detials.get_verified_display()},
+                            "child_count":user_detials.child_count,
+                            'subscribed_count':Subscription.objects.filter(subscribe=user_detials.id).\
+                            values_list('profile',flat=True).distinct().count()
+                        }
             else:
                 data['user_details']={
                         "user_id":user_detials.user.id,
@@ -298,38 +321,23 @@ class AuthCheckerView(generics.ListAPIView):
                         "user": user_detials.user.username,
                         "account": user_detials.account,
                         "image": request.build_absolute_uri(user_detials.image.url) if user_detials.image else None,
-                        "firstname":user_detials.firstname,
-                        "lastname": user_detials.lastname,
+                        "company_name":user_detials.company_name,
                         "email": user_detials.email,
-                        "dob": user_detials.dob,
-                        "gender":user_detials.gender,
                         "phone":user_detials.phone,
+                        'is_active':is_active,
                         "country_code":user_detials.country_code.id,
                         "dial_code":user_detials.dial_code,
                         "verified_user_status":{'status_value':user_detials.verified,'status':user_detials.get_verified_display()},
-                        "child_count":user_detials.child_count,
+                        "address":user_detials.address,
                         'subscribed_count':Subscription.objects.filter(subscribe=user_detials.id).\
-                        values_list('profile',flat=True).distinct().count()
+                            values_list('profile',flat=True).distinct().count()
                     }
+            return Response({'result':data,'request_status': 1,'msg': "Success"}, status=status.HTTP_200_OK)
         else:
-            data['user_details']={
-                    "user_id":user_detials.user.id,
-                    "profile_id":user_detials.id,
-                    "user": user_detials.user.username,
-                    "account": user_detials.account,
-                    "image": request.build_absolute_uri(user_detials.image.url) if user_detials.image else None,
-                    "company_name":user_detials.company_name,
-                    "email": user_detials.email,
-                    "phone":user_detials.phone,
-                    "country_code":user_detials.country_code.id,
-                    "dial_code":user_detials.dial_code,
-                    "verified_user_status":{'status_value':user_detials.verified,'status':user_detials.get_verified_display()},
-                    "address":user_detials.address,
-                    'subscribed_count':Subscription.objects.filter(subscribe=user_detials.id).\
-                        values_list('profile',flat=True).distinct().count()
-                }
-        return Response({'result':data,'request_status': 1,'msg': "Success"}, status=status.HTTP_200_OK)
-    
+            LogoutAllView.post(self,request)
+            return Response({'result':data,'request_status': 0,
+                'msg': "Opss! your account is deactivated please contact at kidsadmin@mykidsclub.com for more details"}, status=status.HTTP_200_OK)
+
 
 class LoginView(KnoxLoginView):
     permission_classes = [AllowAny]
@@ -384,6 +392,7 @@ class LoginView(KnoxLoginView):
                         menu_details = RoleMenuMappingTable.objects.filter(role=role_data.id,
                                         is_deleted=False).values('menu','menu__name','menu__url',
                                         'menu__parent_id','menu__icon','is_create','is_read','is_delete','is_edit')
+                        
                         for menu in menu_details:
                             if menu['menu__parent_id'] == 0:
                                 data_dict={
@@ -400,36 +409,45 @@ class LoginView(KnoxLoginView):
                                         }
                                     }
                                 }
-                                if data_dict not in menu_details_final:
-                                        menu_details_final.append(data_dict)
+
+                                menu_details_final.append(data_dict)
                             else:
                                 parent_data = AdminMenu.objects.filter(id=menu['menu__parent_id']).values('id','name','url','icon')
+                                print("parent_data",parent_data)
+    
                                 if parent_data:
-                                    child_list=[]
-                                    meta_child={}
-                                    data_dict=parent_data[0]
-                                    child_data = menu_details.filter(menu__parent_id=menu['menu__parent_id']).values('menu','menu__name','menu__url',
-                                        'menu__parent_id','menu__icon','is_create','is_read','is_delete','is_edit')
-                                    print("child_data",child_data)
-                                    for child in child_data:
-                                        meta_child={
-                                            'id':child['menu'],
-                                            'name':child['menu__name'],
-                                            'url':child['menu__url'] ,
-                                            'icon':child['menu__url'],
-                                            "linkProps": {
-                                                "queryParams": {
-                                                    "is_create": menu['is_create'],
-                                                    "is_read": menu['is_read'],
-                                                    "is_delete": menu['is_delete'],
-                                                    "is_edit": menu['is_edit']
+                                    check_id = parent_data[0]['id']
+                                    print("check_id",check_id)
+                                    danger_flag = 0
+                                    for check_data in menu_details_final:
+                                        if check_data['id'] == check_id:
+                                            danger_flag=1
+                                    if danger_flag == 0 :
+                                        child_list=[]
+                                        meta_child={}
+                                        data_dict=parent_data[0]
+                                        child_data = menu_details.filter(menu__parent_id=menu['menu__parent_id']).values('menu','menu__name','menu__url',
+                                            'menu__parent_id','menu__icon','is_create','is_read','is_delete','is_edit')
+                                        print("child_data",child_data)
+                                        for child in child_data:
+                                            meta_child={
+                                                'id':child['menu'],
+                                                'name':child['menu__name'],
+                                                'url':child['menu__url'] ,
+                                                'icon':child['menu__url'],
+                                                "linkProps": {
+                                                    "queryParams": {
+                                                        "is_create": menu['is_create'],
+                                                        "is_read": menu['is_read'],
+                                                        "is_delete": menu['is_delete'],
+                                                        "is_edit": menu['is_edit']
+                                                    }
                                                 }
                                             }
-                                        }
-                                        child_list.append(meta_child)
-                                    data_dict['children']=child_list
-                                    if data_dict not in menu_details_final:
-                                        menu_details_final.append(data_dict)
+                                            child_list.append(meta_child)
+                                        data_dict['children']=child_list
+                                        if data_dict not in menu_details_final:
+                                            menu_details_final.append(data_dict)
 
                     else:
                         role_details={}
@@ -525,6 +543,10 @@ class SignupUserView(generics.ListCreateAPIView):
     def post(self, request, *args, **kwargs):
         return super(self.__class__,self).post(request, *args, **kwargs)
 
+    @response_modify_decorator_get_after_execution
+    def get(self, request, *args, **kwargs):
+        return super(self.__class__,self).get(request, *args, **kwargs)
+
 class SignupSubChildUserView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated] 
     authentication_classes = [TokenAuthentication]
@@ -558,7 +580,21 @@ class EditSubChildProfileView(generics.UpdateAPIView):
         if account == 'Parent':
             child_id = self.kwargs['pk']
             if SubChildProfile.objects.get(id=child_id).profile.id == parent_id:
-                return super().put(request, *args, **kwargs)
+                firstname= request.data.get('firstname') if request.data.get('firstname') else ""
+                lastname= request.data.get('lastname') if request.data.get('lastname') else ""
+                dob= request.data.get('dob') if request.data.get('dob') else None
+                gender= request.data.get('gender') if request.data.get('gender') else None
+                updated_by= request.data.get('updated_by')
+                response = super(self.__class__,self).put(request, *args, **kwargs)
+                sub_child = SubChildProfile.objects.exclude(id=child_id).filter(firstname__iexact=firstname,lastname__iexact=lastname,is_deleted=False)
+                if not sub_child:
+                    print("lets seee")
+                    sub_child_update = SubChildProfile.objects.filter(id=child_id).update(firstname=firstname,
+                                        lastname=lastname,dob=dob,gender=gender,updated_by=updated_by)
+                    return response
+                else:
+                    raise CustomAPIException(None,'Child Name Already exist',status_code=status.HTTP_409_CONFLICT)
+
             else:
                 return Response({'request_status': 0, 'msg': "can't edit,Access denied"}, status=status.HTTP_200_OK)
 class ChangePasswordView(generics.UpdateAPIView):

@@ -26,6 +26,7 @@ SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
+# DEBUG = False
 
 ALLOWED_HOSTS = ['*']
 
@@ -52,7 +53,8 @@ INSTALLED_APPS = [
     'videoservices',
     'mailapp',
     'smsapp',
-    'corsheaders'
+    'corsheaders',
+    'adminpanel'
 ]
 
 REST_FRAMEWORK = {
@@ -197,12 +199,12 @@ EMAIL_HOST_PASSWORD = 'hjtrgqurebsusywx'
 
 
 # ============= SMS configrations =================
-SMS_URL = "https://sms.faresms.com/api_v2/message/send"
-SMS_API_KEY = "g7B5sc9OU_y1f-f35t8LnfFO2VELyBzRdXATCxljovrfcJjDOI3hZV1XQO1X8zfY"
-SMS_PORT = 80
-SMS_USER = 'shail'
-SMS_PASS = '62009'
-SMS_SENDER = 'SSILMA'
+# SMS_URL = "https://sms.faresms.com/api_v2/message/send"
+# # SMS_API_KEY = "g7B5sc9OU_y1f-f35t8LnfFO2VELyBzRdXATCxljovrfcJjDOI3hZV1XQO1X8zfY"
+# # SMS_PORT = 80
+# SMS_USER = 'shail'
+# SMS_PASS = '62009'
+# SMS_SENDER = 'SSILMA'
 
 ######### TEXT LOCAL SMS GATEWAY CONFIGURATION ########
 
@@ -223,34 +225,10 @@ MSG_NO_DATA="No Data Found"
 MSG_ERROR="Failure"
 # ============= Error Msg configrations =================
 
+
+REDIRECT_URL = 'http://192.168.24.129:4200/'
+# REDIRECT_URL = 'https://166.62.54.122/kidsclub/'
 # #=================TESTING AND DEVELOPMENT CONFIGRATION FOR SOCIAL AUTH================================= 
-# # Facebook configuration
-# SOCIAL_AUTH_FACEBOOK_KEY = ''
-# SOCIAL_AUTH_FACEBOOK_SECRET = ''
-
-# # Define SOCIAL_AUTH_FACEBOOK_SCOPE to get extra permissions from Facebook.
-# # Email is not sent by default, to get it, you must request the email permission.
-# SOCIAL_AUTH_FACEBOOK_SCOPE = ['email']
-
-# SOCIAL_AUTH_FACEBOOK_PROFILE_EXTRA_PARAMS = {       # add this
-#       'fields': 'id, name, email, picture.type(large), link'
-#     }
-# SOCIAL_AUTH_FACEBOOK_EXTRA_DATA = [                 # add this
-#         ('name', 'name'),
-#         ('email', 'email'),
-#         ('picture', 'picture'),
-#         ('link', 'profile_url'),
-#     ]
-
-# SOCIAL_AUTH_PIPELINE = (
-#     'social_core.pipeline.social_auth.social_details',
-#     'social_core.pipeline.social_auth.social_uid',
-#     'social_core.pipeline.social_auth.auth_allowed',
-#     'social_core.pipeline.social_auth.social_user',
-#     'social_core.pipeline.social_auth.associate_user',
-#     'social_core.pipeline.social_auth.load_extra_data',
-#     'social_core.pipeline.user.user_details',
-#     # 'users.social_auth_pipeline.create_user_by_type', #custome pipline during the authentication to create user with custome details
-# )
+SITE_URL = 'http://192.168.28.123:8000/media/'
 
 #***********************************XXXXXXXX**************************************************************

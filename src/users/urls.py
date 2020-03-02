@@ -2,7 +2,7 @@ from users import views
 from django.conf.urls import url, include
 from rest_framework import routers
 from django.urls import path
-from knox import views as knox_views
+from knox_views import views as knox_views
 from django.conf import settings
 
 

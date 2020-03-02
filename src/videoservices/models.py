@@ -5,6 +5,8 @@ import time
 
 class Genere(models.Model):
     name =  models.CharField(max_length=100,blank=True,null=True)
+    url = models.CharField( max_length=500,blank=True,null=True)
+    icon = models.CharField( max_length=500,blank=True,null=True)
     is_deleted = models.BooleanField(default=False)
     created_by = models.ForeignKey(User, related_name='g_created_by',
                                    on_delete=models.CASCADE, blank=True, null=True)
@@ -148,6 +150,7 @@ class Video(models.Model):
     private_code = models.CharField(max_length=10,blank=True,null=True)
     term_and_conditions = models.BooleanField(default=False)
     age_range = models.CharField(default='21+ or above', choices=AGE_RANGE,max_length=20)
+    is_admin_reviewed = models.BooleanField(default=False)
     is_deleted = models.BooleanField(default=False)
     created_by = models.ForeignKey(User, related_name='v_created_by',
                                    on_delete=models.CASCADE, blank=True, null=True)
