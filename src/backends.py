@@ -8,10 +8,41 @@ from custom_exception_message import *
 
 class EmailandPhoneAuthBackend(ModelBackend):
 	"""
-	Email Authentication Backend
+	Email and Phone Authentication Backend
+	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	AUTHOR :- 
+	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	========================================================================================
+	PythonDeveloper: -  Abhisek singh
+	Contact: - raizadaabhi11@gmail.com/+91 - 7595914029
+	========================================================================================
+	DESCRIPTIONS: - 
+	========================================================================================
+	This class is customized to handle diffrent type of user and admin 
+	logging at kidsclub its api is designed in such way 
+	========================================================================================
+	SPECIFICATION:- 
+	========================================================================================
+	->django admin login :-         Need not provide any auth provider
+	->kidsclub admin login :-       Need to provide auth provider as 'admin'
+	->kidsclub User login :-        Need to provide auth provider as 'kidsclub'
+	->kidsclub social User login :- Need to provide auth provider as 'facebook' or 'google
+	========================================================================================
+	WORKING:- 
+	========================================================================================
+	1)Allows a user of Kidsclub_Amin panel to sign in using a username/password pair.
+	2)Allows a user of Kidsclub to sign in using an email or phone/password pair rather than
+		a username/password pair.
 
-	Allows a user to sign in using an email or phone/password pair rather than
-	a username/password pair.
+    ========================================================================================
+	PARAMS:-
+	========================================================================================
+	-> authenticate(self,request,username=None, password=None,**kwargs)
+		PARAM:
+			|-->username as signature and parameter if not provided default taken as None
+			|-->password as signature and parameter if not provided default taken as None
+			|-->kwargs as signature and parameter taking 'auth_provider'
+	========================================================================================
 
 	"""
  
