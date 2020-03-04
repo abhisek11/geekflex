@@ -28,4 +28,5 @@ urlpatterns = [
     path('country_code_add/',views.CountryCodeViewAdd.as_view()),
     path('genere_add_list/',views.GenereAddListView.as_view()),
     path('catagory_list/',views.CatagoryListView.as_view()),
+    path('search/',views.SearchView.as_view()),
 ]

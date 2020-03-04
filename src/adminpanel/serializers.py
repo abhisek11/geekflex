@@ -201,3 +201,11 @@ class AppUserActivateViewSerializer(serializers.ModelSerializer):
     class Meta:
         model=User
         fields=('id','first_name','last_name','email','is_active','is_superuser')
+
+class VideoListViewSerializer(serializers.ModelSerializer):
+    created_by = serializers.CharField(default=serializers.CurrentUserDefault())
+    owned_by = serializers.CharField(default=serializers.CurrentUserDefault())
+    tags =  serializers.ListField(required=False)
+    class Meta:
+        model=Video
+        fields=('__all__')

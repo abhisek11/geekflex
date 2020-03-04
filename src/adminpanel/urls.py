@@ -13,5 +13,6 @@ urlpatterns = [
     path('role_list_wo_pagination/',views.RoleListView.as_view()),
     path('app_user_list/',views.AppUserListView.as_view()),
     path('app_user_activate/<pk>/',views.AppUserActivateView.as_view()),
+    path('video_review_list/',views.VideoListView.as_view()),
 
 ]

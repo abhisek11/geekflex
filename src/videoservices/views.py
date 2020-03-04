@@ -19,6 +19,8 @@ from rest_framework import mixins
 from custom_decorator import *
 from rest_framework.views import APIView
 from django.db.models import When, Case, Value, CharField, IntegerField, F, Q
+from functools import reduce
+from operator import or_
 from threading import Thread  # for threading
 import datetime
 from urllib import request
@@ -358,43 +360,72 @@ class VideoListView(generics.ListCreateAPIView,mixins.UpdateModelMixin):
             data_dict['thumbnail_stack']=link_list
             channel_details = Profile.objects.get(id=data.channel.id)
             if request.user.is_authenticated:
-                current_user_profile = request.user.profile.id
-                print("current_user_profile",current_user_profile)
-                subscribed_or_not = Subscription.objects.filter(profile=current_user_profile,subscribe=data.channel.id,is_deleted=False).exists()
+                try:
+                    current_user_profile = request.user.profile.id
+                    print("current_user_profile",current_user_profile)
+                    subscribed_or_not = Subscription.objects.filter(profile=current_user_profile,subscribe=data.channel.id,is_deleted=False).exists()
 
 
-                if channel_details.account !='Company':
-                    data_dict['channel_details']={
-                        'id':channel_details.id,
-                        'user_id':channel_details.user_id,
-                        'firstname':channel_details.firstname,
-                        'lastname': channel_details.lastname,
-                        'image': request.build_absolute_uri(channel_details.image.url) if channel_details.image else None,
-                        'subscribed_count':Subscription.objects.filter(subscribe=channel_details.id).\
-                            values_list('profile',flat=True).distinct().count(),
-                        'is_subscribed':  Subscription.objects.get(profile=current_user_profile,
-                                        subscribe=data.channel.id,is_deleted=False).is_subscribed if subscribed_or_not
-                                        else False,
-                        'verified':channel_details.verified,
-                        
-                        
-                    }
-                else:
-                    data_dict['channel_details']={
-                        'id':channel_details.id,
-                        'user_id':channel_details.user_id,
-                        'company_name': channel_details.company_name,
-                        'address': channel_details.address,
-                        'image': request.build_absolute_uri(channel_details.image.url) if channel_details.image else None,
-                        'subscribed_count':Subscription.objects.filter(subscribe=channel_details.id).\
-                            values_list('profile',flat=True).distinct().count(),
-                        'is_subscribed':Subscription.objects.get(profile=current_user_profile,
-                                        subscribe=data.channel.id,is_deleted=False).is_subscribed if subscribed_or_not
-                                        else False,
-                        'verified':channel_details.verified,
-                        
-                        
-                    }
+                    if channel_details.account !='Company':
+                        data_dict['channel_details']={
+                            'id':channel_details.id,
+                            'user_id':channel_details.user_id,
+                            'firstname':channel_details.firstname,
+                            'lastname': channel_details.lastname,
+                            'image': request.build_absolute_uri(channel_details.image.url) if channel_details.image else None,
+                            'subscribed_count':Subscription.objects.filter(subscribe=channel_details.id).\
+                                values_list('profile',flat=True).distinct().count(),
+                            'is_subscribed':  Subscription.objects.get(profile=current_user_profile,
+                                            subscribe=data.channel.id,is_deleted=False).is_subscribed if subscribed_or_not
+                                            else False,
+                            'verified':channel_details.verified,
+                            
+                            
+                        }
+                    else:
+                        data_dict['channel_details']={
+                            'id':channel_details.id,
+                            'user_id':channel_details.user_id,
+                            'company_name': channel_details.company_name,
+                            'address': channel_details.address,
+                            'image': request.build_absolute_uri(channel_details.image.url) if channel_details.image else None,
+                            'subscribed_count':Subscription.objects.filter(subscribe=channel_details.id).\
+                                values_list('profile',flat=True).distinct().count(),
+                            'is_subscribed':Subscription.objects.get(profile=current_user_profile,
+                                            subscribe=data.channel.id,is_deleted=False).is_subscribed if subscribed_or_not
+                                            else False,
+                            'verified':channel_details.verified,
+                            
+                            
+                        }
+                except Exception:
+                    if channel_details.account !='Company':
+                        data_dict['channel_details']={
+                            'id':channel_details.id,
+                            'user_id':channel_details.user_id,
+                            'firstname':channel_details.firstname,
+                            'lastname': channel_details.lastname,
+                            'image': request.build_absolute_uri(channel_details.image.url) if channel_details.image else None,
+                            'subscribed_count':Subscription.objects.filter(subscribe=channel_details.id).\
+                                values_list('profile',flat=True).distinct().count(),
+                            'verified':channel_details.verified,
+                            
+                            
+                        }
+                    else:
+                        data_dict['channel_details']={
+                            'id':channel_details.id,
+                            'user_id':channel_details.user_id,
+                            'company_name': channel_details.company_name,
+                            'address': channel_details.address,
+                            'image': request.build_absolute_uri(channel_details.image.url) if channel_details.image else None,
+                            'subscribed_count':Subscription.objects.filter(subscribe=channel_details.id).\
+                                values_list('profile',flat=True).distinct().count(),
+                            'verified':channel_details.verified,
+                            
+                            
+                        }
+
             else:
                 if channel_details.account !='Company':
                     data_dict['channel_details']={
@@ -827,7 +858,7 @@ class ChannelVideoListingView(generics.ListAPIView):
 
     permission_classes = [AllowAny]
     # authentication_classes = [TokenAuthentication]
-    pagination_class = CSPageNumberPagination
+    pagination_class = OnOffPagination
     queryset = Video.objects.filter(is_deleted=False,updated_by__isnull=False,
                 title__isnull=False,description__isnull=False).order_by('-id')
     serializer_class = ChannelVideoListingViewSerializer
@@ -837,7 +868,7 @@ class ChannelVideoListingView(generics.ListAPIView):
         channel_id = self.request.query_params.get('channel_id',None)
         return self.queryset.filter(channel=channel_id)
 
-    @response_modify_decorator_list_or_get_after_execution_for_pagination
+    @response_modify_decorator_list_or_get_after_execution_for_onoff_pagination
     def get(self, request, *args, **kwargs):
         response = super(self.__class__,self).get(request, *args, **kwargs)
         for data in response.data['results']:
@@ -882,7 +913,7 @@ class ChannelVideoListingView(generics.ListAPIView):
 class CountryCodeViewAdd(generics.ListCreateAPIView):
 
     permission_classes = [AllowAny]
-    queryset = CountryCode.objects.filter(is_deleted=False).order_by('-id')
+    queryset = CountryCode.objects.filter(is_deleted=False).order_by('name')
     serializer_class = CountryCodeViewAddSerializer
     filter_backends=(DjangoFilterBackend,)
 
@@ -1009,3 +1040,219 @@ class PrivateVideoCheckView(generics.ListCreateAPIView):
                             status=status.HTTP_200_OK)
         except Exception as e:
             raise e
+
+class SearchView(generics.ListAPIView):
+    permission_classes = [AllowAny]
+
+    # authentication_classes = [TokenAuthentication]
+    queryset = Video.objects.filter(is_deleted=False)
+    
+    def search_in (self,column,operator,value_list):         
+        myfilter = column + '__' + operator
+        q_object = reduce(or_, (Q(**{myfilter:search}) for search in value_list))
+        print('q_object',q_object)
+        return q_object
+
+    def get(self, request, *args, **kwargs):
+        search = self.request.query_params.get('search', None).split(' ')
+        print("search",search)
+        channel_id=[]
+        video_id=[]
+        if search :
+            channel_name_id= Profile.objects.filter((self.search_in('firstname','icontains',search)|
+                                                    self.search_in('lastname','icontains',search)|
+                                                    self.search_in('company_name','icontains',search)),is_deleted=False).\
+                                                    values_list('id',flat=True).distinct()
+            vid_id= Video.objects.filter((self.search_in('channel__firstname','icontains',search)|
+                                        self.search_in('channel__lastname','icontains',search)|
+                                        self.search_in('channel__company_name','icontains',search)|
+                                        self.search_in('title','icontains',search)|
+                                        self.search_in('description','icontains',search)),is_deleted=False).\
+                                        values_list('id',flat=True).distinct()
+
+            tag_vid_id= VideoTags.objects.filter(self.search_in('tags','icontains',search),is_deleted=False).\
+                            values_list('video',flat=True).distinct()
+            video_id = list(set(list(vid_id)+list(tag_vid_id)))
+            channel_id = list(set(list(channel_name_id)))
+
+        print("video_id",video_id)
+        print("channel_id",channel_id)
+        video_list=[]
+        channel_list=[]
+        if video_id:
+            video_details =  Video.objects.filter(id__in=video_id)
+            # print("video_details",video_details)
+            
+            for data in video_details:
+                # print("data.id",data.id)
+                data_dict = {}
+
+                data_dict['id']=data.id
+                data_dict['channel']=data.channel.id
+                data_dict['video']=request.build_absolute_uri(data.video.url)
+                data_dict['title']=data.title
+                data_dict['description']=data.description
+                data_dict['category']={'id':data.category.id,'name':data.category.name}
+                data_dict['private_video']=data.private_video
+                data_dict['featured_video']=data.featured_video
+                data_dict['term_and_conditions']=data.term_and_conditions
+                data_dict['age_range']=data.age_range
+                data_dict['is_deleted']=data.is_deleted
+                data_dict['created_at']=data.created_at
+                data_dict['updated_at']=data.updated_at
+                # print("data_dict",data_dict)
+
+                
+                link_list = []
+                thumbnail = VideoThumbnailDocuments.objects.filter(video=data.id,is_deleted=False)
+                for link in thumbnail:
+                    link_list.append(request.build_absolute_uri(link.thumbnail.url))
+                
+                data_dict['thumbnail_stack']=link_list
+                # print("data_dict",data_dict)
+                channel_details = Profile.objects.get(id=data.channel.id)
+                if request.user.is_authenticated:
+                    current_user_profile = request.user.profile.id
+                    # print("current_user_profile",current_user_profile)
+                    subscribed_or_not = Subscription.objects.filter(profile=current_user_profile,subscribe=data.channel.id,is_deleted=False).exists()
+
+
+                    if channel_details.account !='Company':
+                        data_dict['channel_details']={
+                            'id':channel_details.id,
+                            'user_id':channel_details.user_id,
+                            'firstname':channel_details.firstname,
+                            'lastname': channel_details.lastname,
+                            'image': request.build_absolute_uri(channel_details.image.url) if channel_details.image else None,
+                            'subscribed_count':Subscription.objects.filter(subscribe=channel_details.id).\
+                                values_list('profile',flat=True).distinct().count(),
+                            'is_subscribed':  Subscription.objects.get(profile=current_user_profile,
+                                            subscribe=data.channel.id,is_deleted=False).is_subscribed if subscribed_or_not
+                                            else False,
+                            'verified':channel_details.verified,
+                            
+                            
+                        }
+                        # print("data_dict",data_dict)
+                    else:
+                        data_dict['channel_details']={
+                            'id':channel_details.id,
+                            'user_id':channel_details.user_id,
+                            'company_name': channel_details.company_name,
+                            'address': channel_details.address,
+                            'image': request.build_absolute_uri(channel_details.image.url) if channel_details.image else None,
+                            'subscribed_count':Subscription.objects.filter(subscribe=channel_details.id).\
+                                values_list('profile',flat=True).distinct().count(),
+                            'is_subscribed':Subscription.objects.get(profile=current_user_profile,
+                                            subscribe=data.channel.id,is_deleted=False).is_subscribed if subscribed_or_not
+                                            else False,
+                            'verified':channel_details.verified,
+                            
+                            
+                        }
+                        # print("data_dict",data_dict)
+                else:
+                    if channel_details.account !='Company':
+                        data_dict['channel_details']={
+                            'id':channel_details.id,
+                            'user_id':channel_details.user_id,
+                            'firstname':channel_details.firstname,
+                            'lastname': channel_details.lastname,
+                            'image': request.build_absolute_uri(channel_details.image.url) if channel_details.image else None,
+                            'subscribed_count':Subscription.objects.filter(subscribe=channel_details.id).\
+                                values_list('profile',flat=True).distinct().count(),
+                            'is_subscribed':False,
+                            'verified':channel_details.verified,
+                            
+                            
+                        }
+                        # print("data_dict",data_dict)
+                    else:
+                        data_dict['channel_details']={
+                            'id':channel_details.id,
+                            'user_id':channel_details.user_id,
+                            'company_name': channel_details.company_name,
+                            'address': channel_details.address,
+                            'image': request.build_absolute_uri(channel_details.image.url) if channel_details.image else None,
+                            'subscribed_count':Subscription.objects.filter(subscribe=channel_details.id).\
+                                values_list('profile',flat=True).distinct().count(),
+                            'is_subscribed':False,
+                            'verified':channel_details.verified,
+                            
+                            
+                        }
+                        # print("data_dict",data_dict)
+                view_auth_profile = VideoViews.objects.filter(~Q(Profile=0),video=data.id).values('Profile').distinct().count()
+                view_guest_profile = VideoViews.objects.filter(Profile=0,video=data.id).values('ip_address').distinct().count()
+                data_dict['views']=view_auth_profile+view_guest_profile
+                data_dict['tags']=VideoTags.objects.filter(video=data.id,is_deleted=False).values_list('tags',flat=True).distinct()
+                # print("data_dict",data_dict)
+                video_list.append(data_dict)
+            # print("video_list",video_list)
+        
+        if channel_id:
+            channel_details =  Profile.objects.filter(id__in=channel_id)
+            
+            for channel in channel_details:
+                data_dict={}
+                
+                data_dict["id"]=channel.id
+                data_dict["image"]=request.build_absolute_uri(channel.image.url) if channel.image else None
+                data_dict["auth_provider"]=channel.auth_provider
+                data_dict["verified"]=channel.verified
+                data_dict["account"]=channel.account
+                data_dict["photoUrl"]=channel.photoUrl
+                data_dict["firstname"]=channel.firstname
+                data_dict["lastname"]=channel.lastname
+                data_dict["company_name"]=channel.company_name
+                data_dict["address"]=channel.address
+                data_dict["email"]=channel.email
+                data_dict["dob"]=channel.dob
+                data_dict["gender"]=channel.gender
+                data_dict["dial_code"]=channel.dial_code
+                data_dict["phone"]=channel.phone
+                data_dict["child_count"]=channel.child_count
+                data_dict["is_phone_verified"]=channel.is_phone_verified
+                data_dict["is_email_verified"]=channel.is_email_verified
+                data_dict["user"]=channel.user.id
+                data_dict["country_code"]=channel.country_code.id
+                data_dict["is_deleted"]=channel.is_deleted
+                data_dict["video_count"]=Video.objects.filter(channel=channel.id).count()
+                subs_count = Subscription.objects.filter(subscribe=channel.id).\
+                                    values_list('profile',flat=True).distinct().count()
+                country_details = CountryCode.objects.filter(id=channel.country_code.id).values('name','dial_code','code')
+                data_dict['subscriber_counts'] = subs_count if subs_count else 0
+                data_dict['country_details'] = country_details[0] if country_details else {}
+                if request.user.is_authenticated:
+                    current_user_profile = request.user.profile.id
+                    subscribed_or_not = Subscription.objects.filter(profile=current_user_profile,subscribe=channel.id,is_deleted=False).exists()   
+                    if subscribed_or_not:
+                        data_dict['is_subscribed']=  Subscription.objects.get(profile=current_user_profile,subscribe=channel.id,is_deleted=False).is_subscribed
+                    else:
+                        data_dict['is_subscribed']=False
+                else:
+                    data_dict['is_subscribed']=False
+                channel_data = Profile.objects.get(id=channel.id)
+                data_dict['verified_user_status']={'status_value':channel_data.verified,
+                                            'status':channel_data.get_verified_display()}
+                channel_list.append(data_dict)
+            print("channel_list",channel_list)
+
+        if len(channel_list)>0 or len(video_list)>0:
+            return Response({'request_status':1,
+                                'results':{
+                                    'channels':channel_list,
+                                    'videos':video_list,
+                                    'msg':'success'
+                                    },
+                                },
+                                status=status.HTTP_200_OK)
+        else:
+            return Response({'request_status':0,
+                                'results':{
+                                    'channels':[],
+                                    'videos':[],
+                                    'msg':'No Data Found'
+                                    },
+                                },
+                                status=status.HTTP_200_OK)

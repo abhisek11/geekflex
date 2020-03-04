@@ -316,11 +316,32 @@ class AppUserListView(generics.ListAPIView):
 
     def get_queryset(self):
         account = self.request.query_params.get('account', None)
+        search = self.request.query_params.get('search', None)
+        filter={}
         if account:
-            print("account",account)
-            return self.queryset.filter(account=account)
+            filter['account']=account
+        #     print("account",account)
+        #     return self.queryset.filter(account=account)
+        # else:
+        #     return self.queryset
+        
+        if search :
+            search_data = list(map(str,search.split(" ")))
+            print("This is if condition entry")
+            if len(search.split(" "))>0 and len(search.split(" "))<2:
+                print("length 1 hai ")
+                queryset = self.queryset.filter((Q(firstname__icontains=search_data[0])|Q(lastname__icontains=search_data[0])),
+                                                is_deleted=False,**filter)                            
+                return queryset
+            elif len(search.split(" "))>1:
+                print("length 2 hai ")
+                queryset = self.queryset.filter((Q(firstname__icontains=search_data[0]) & Q(lastname__icontains=search_data[1])),
+                                                is_deleted=False,**filter)
+                return queryset                
+
         else:
-            return self.queryset
+            queryset = self.queryset.filter(is_deleted=False,**filter)
+            return queryset
 
 
     @response_modify_decorator_list_or_get_after_execution_for_onoff_pagination
@@ -339,6 +360,7 @@ class AppUserListView(generics.ListAPIView):
                         'lastname':data['lastname'],
                         'account':data['account'],
                         'is_active':User.objects.get(id=data['user']).is_active,
+                        'regester_date':data['created_at'],
                     } 
                     data_list.append(data_dict)
                 else:
@@ -349,6 +371,7 @@ class AppUserListView(generics.ListAPIView):
                         'lastname':data['lastname'],
                         'account':data['account'],
                         'is_active':User.objects.get(id=data['user']).is_active,
+                        'regester_date':data['created_at'],
                     } 
                     child_data = SubChildProfile.objects.filter(profile=data['id'],is_deleted=False).values('firstname','lastname')
                     data_dict['children']=child_data
@@ -360,6 +383,7 @@ class AppUserListView(generics.ListAPIView):
                         'company_name':data['company_name'],
                         'account':data['account'],
                         'is_active':User.objects.get(id=data['user']).is_active,
+                        'regester_date':data['created_at'],
                     } 
                 data_list.append(data_dict)
 
@@ -378,3 +402,64 @@ class AppUserActivateView(generics.RetrieveUpdateAPIView):
     @response_modify_decorator_update
     def put(self, request, *args, **kwargs):
         return super(self.__class__,self).put(request, *args, **kwargs)
+
+class VideoListView(generics.ListCreateAPIView,mixins.UpdateModelMixin):
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [TokenAuthentication]
+    queryset = Video.objects.filter(is_deleted=False)
+    serializer_class = VideoListViewSerializer
+    pagination_class = OnOffPagination
+
+    def get_queryset(self):
+        search = self.request.query_params.get('search', None)
+        if search :
+            queryset = self.queryset.filter(title__icontains=search,is_deleted=False).order_by('title')                           
+            return queryset                
+
+        else:
+            queryset = self.queryset.filter(is_deleted=False).order_by('title')
+            return queryset
+
+
+
+    @response_modify_decorator_list_or_get_after_execution_for_pagination
+    def get(self, request, *args, **kwargs):
+        response = super(self.__class__,self).get(request, *args, **kwargs)
+        for data in response.data['results']:
+            link_list = []
+            thumbnail = VideoThumbnailDocuments.objects.filter(video=data['id'],is_deleted=False)
+            for link in thumbnail:
+                link_list.append(request.build_absolute_uri(link.thumbnail.url))
+            
+            data['thumbnail_stack']=link_list
+            channel_details = Profile.objects.get(id=data['channel'])
+
+            if channel_details.account !='Company':
+                data['channel_details']={
+                    'id':channel_details.id,
+                    'user_id':channel_details.user_id,
+                    'firstname':channel_details.firstname,
+                    'lastname': channel_details.lastname,
+                    'image': request.build_absolute_uri(channel_details.image.url) if channel_details.image else None,
+                    'subscribed_count':Subscription.objects.filter(subscribe=channel_details.id).\
+                        values_list('profile',flat=True).distinct().count(),
+                    'verified':channel_details.verified,
+                    
+                }
+            else:
+                data['channel_details']={
+                    'id':channel_details.id,
+                    'user_id':channel_details.user_id,
+                    'company_name': channel_details.company_name,
+                    'address': channel_details.address,
+                    'image': request.build_absolute_uri(channel_details.image.url) if channel_details.image else None,
+                    'subscribed_count':Subscription.objects.filter(subscribe=channel_details.id).\
+                        values_list('profile',flat=True).distinct().count(),
+                    'verified':channel_details.verified,
+                    
+                }
+            view_auth_profile = VideoViews.objects.filter(~Q(Profile=0),video=data['id']).values('Profile').distinct().count()
+            view_guest_profile = VideoViews.objects.filter(Profile=0,video=data['id']).values('ip_address').distinct().count()
+            data['views']=view_auth_profile+view_guest_profile
+            
+        return response
