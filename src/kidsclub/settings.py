@@ -231,4 +231,10 @@ REDIRECT_URL = 'http://192.168.24.129:4200/'
 # #=================TESTING AND DEVELOPMENT CONFIGRATION FOR SOCIAL AUTH================================= 
 SITE_URL = 'http://192.168.28.123:8000/media/'
 
+
+
+
+######celery setups###############
+CELERY_BROKER_URL = 'amqp://localhost'
+
 #***********************************XXXXXXXX**************************************************************

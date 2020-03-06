@@ -1,0 +1,51 @@
+celery & RabbitMQ:================================
+pip install Celery
+
+Now we have to install RabbitMQ.
+
+Installing RabbitMQ on Ubuntu 16.04
+To install it on a newer Ubuntu version is very straightforward:
+
+apt-get install -y erlang
+apt-get install rabbitmq-server
+
+Then enable and start the RabbitMQ service:
+
+systemctl enable rabbitmq-server
+systemctl start rabbitmq-server
+
+Check the status to make sure everything is running smooth:
+
+systemctl status rabbitmq-server
+
+Add the CELERY_BROKER_URL configuration to the settings.py file:
+
+settings.py
+
+CELERY_BROKER_URL = 'amqp://localhost'
+
+Alongside with the settings.py and urls.py files, let’s create a new file named celery.py.
+
+celery.py
+
+import os
+from celery import Celery
+
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'mysite.settings')
+
+app = Celery('mysite')
+app.config_from_object('django.conf:settings', namespace='CELERY')
+app.autodiscover_tasks()
+
+Now edit the __init__.py file in the project root:
+
+__init__.py
+
+from .celery import app as celery_app
+
+__all__ = ['celery_app']
+
+Creating Our First Celery Task
+We can create a file named tasks.py inside a Django app and put all our Celery tasks into this file. The Celery app we created in the project root will collect all tasks defined across all Django apps listed in the INSTALLED_APPS configuration.
+
+Just for testing purpose, let’s create a Celery task that generates a number of random User accounts.

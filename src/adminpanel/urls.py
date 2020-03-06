@@ -14,5 +14,8 @@ urlpatterns = [
     path('app_user_list/',views.AppUserListView.as_view()),
     path('app_user_activate/<pk>/',views.AppUserActivateView.as_view()),
     path('video_review_list/',views.VideoListView.as_view()),
+    path('admin_video_review/<pk>/',views.AdminReviewUpdateView.as_view()),
+    path('admin_video_publish/<pk>/',views.AdminPublishUpdateView.as_view()),
+
 
 ]

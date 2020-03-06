@@ -43,3 +43,46 @@ class CountryCode(admin.ModelAdmin):
 class VideoTags(admin.ModelAdmin):
     list_display = [field.name for field in VideoTags._meta.fields]
 
+
+@admin.register(Help)
+class Help(admin.ModelAdmin):
+    list_display = [field.name for field in Help._meta.fields]
+
+@admin.register(Feedback)
+class Feedback(admin.ModelAdmin):
+    list_display = [field.name for field in Feedback._meta.fields]
+
+@admin.register(Sponsors)
+class Sponsors(admin.ModelAdmin):
+    list_display = [field.name for field in Sponsors._meta.fields]
+
+@admin.register(Service)
+class Service(admin.ModelAdmin):
+    list_display = [field.name for field in Service._meta.fields]
+
+@admin.register(VideoSearchHistory)
+class VideoSearchHistory(admin.ModelAdmin):
+    list_display = [field.name for field in VideoSearchHistory._meta.fields]
+
+@admin.register(Career)
+class Career(admin.ModelAdmin):
+    list_display = [field.name for field in Career._meta.fields]
+
+@admin.register(About)
+class About(admin.ModelAdmin):
+    list_display = [field.name for field in About._meta.fields]
+
+@admin.register(Terms_conditions)
+class Terms_conditions(admin.ModelAdmin):
+    list_display = [field.name for field in Terms_conditions._meta.fields]
+
+@admin.register(Privacy_policy)
+class Privacy_policy(admin.ModelAdmin):
+    list_display = [field.name for field in Privacy_policy._meta.fields]
+
+@admin.register(WatchTimerLog)
+class WatchTimerLog(admin.ModelAdmin):
+    list_display = [field.name for field in WatchTimerLog._meta.fields]
+
+
+

@@ -412,12 +412,20 @@ class VideoListView(generics.ListCreateAPIView,mixins.UpdateModelMixin):
 
     def get_queryset(self):
         search = self.request.query_params.get('search', None)
+        filters = self.request.query_params.get('filters', None)
+        filter={}
+        if filters:
+            if int(filters)==0:
+                filter['is_admin_reviewed'] = 0 
+            elif int(filters)==1:
+                filter['is_admin_reviewed'] = 1
+
         if search :
-            queryset = self.queryset.filter(title__icontains=search,is_deleted=False).order_by('title')                           
+            queryset = self.queryset.filter(title__icontains=search,is_deleted=False,**filter).order_by('title')                           
             return queryset                
 
         else:
-            queryset = self.queryset.filter(is_deleted=False).order_by('title')
+            queryset = self.queryset.filter(is_deleted=False,**filter).order_by('title')
             return queryset
 
 
@@ -463,3 +471,26 @@ class VideoListView(generics.ListCreateAPIView,mixins.UpdateModelMixin):
             data['views']=view_auth_profile+view_guest_profile
             
         return response
+
+
+class AdminReviewUpdateView(generics.RetrieveUpdateAPIView):
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [TokenAuthentication]
+    queryset = Video.objects.filter(is_deleted=False)
+    serializer_class = AdminReviewUpdateViewSerializer
+
+
+    @response_modify_decorator_update
+    def put(self, request, *args, **kwargs):
+        return super(self.__class__,self).put(request, *args, **kwargs)
+
+class AdminPublishUpdateView(generics.RetrieveUpdateAPIView):
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [TokenAuthentication]
+    queryset = Video.objects.filter(is_deleted=False)
+    serializer_class = AdminPublishUpdateViewSerializer
+
+
+    @response_modify_decorator_update
+    def put(self, request, *args, **kwargs):
+        return super(self.__class__,self).put(request, *args, **kwargs)

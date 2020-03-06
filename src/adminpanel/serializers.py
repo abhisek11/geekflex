@@ -209,3 +209,15 @@ class VideoListViewSerializer(serializers.ModelSerializer):
     class Meta:
         model=Video
         fields=('__all__')
+
+class AdminReviewUpdateViewSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model=Video
+        fields=('id','is_admin_reviewed','updated_by','updated_at')
+
+class AdminPublishUpdateViewSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model=Video
+        fields=('id','is_admin_published','updated_by','updated_at')

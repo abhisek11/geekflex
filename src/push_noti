@@ -1,0 +1,65 @@
+[3:12 PM] Rupam Hazra
+
+https://fcm.googleapis.com/fcm/send
+
+    
+{
+ "name": "my_notification",
+  "notification":{
+    "title":"Notification title 11",
+    "body":"Notification body 11",
+    "sound":"default",
+    "click_action":"FCM_PLUGIN_ACTIVITY",
+    "icon":"fcm_push_icon"
+  },
+  "data":{
+    "param1":"Check the discount price",
+    "param2":"12.00",
+    "notification_foreground": "true"
+  },
+    "to":"eVSChYlsiRU:APA91bHABMiX1nPH_1lsjFCz74pABu5JiOjCct8uAd1m3L7NvtfUpdVeOsBrGueGybTtzl41i_FNbWiyBGZsQ4w65ppN3xSdAaPWxfj3XbwSAaIXhWxc0gcParJ_JZvckOwWiZzUKtRK",
+    "priority":"high",
+    "restricted_package_name":""
+}
+Response
+--------------------
+{
+    "multicast_id": 1670145617236763565,
+    "success": 1,
+    "failure": 0,
+    "canonical_ids": 0,
+    "results": [
+        {
+            "message_id": "0:1583487170588921%399b3ae3399b3ae3"
+        }
+    ]
+}
+
+
+
+​[3:12 PM] Rupam Hazra
+    
+Authorization:key=AIzaSyBKlkRtqjiJ9fEu2W7Y9zJNQ0DvKu2UbMc
+Content-Type:application/json
+.
+
+class DeviceTokenForNotification(models.Model):
+    profile = models.ForeignKey(Profile,on_delete=models.CASCADE, blank=True, null=True)
+    device_token =  models.CharField( max_length=500)
+    is_deleted = models.BooleanField(default=False)
+    created_by = models.ForeignKey(User, related_name='dtfn_created_by',
+                                   on_delete=models.CASCADE, blank=True, null=True)
+    owned_by = models.ForeignKey(User, related_name='dtfn_owned_by',
+                                 on_delete=models.CASCADE, blank=True, null=True)
+    updated_by = models.ForeignKey(User, related_name='dtfn_updated_by',
+                                   on_delete=models.CASCADE, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return str(self.id)
+
+    class Meta:
+        db_table = 'device_token_for_notification'
+
+

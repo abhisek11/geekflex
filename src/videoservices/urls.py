@@ -29,4 +29,15 @@ urlpatterns = [
     path('genere_add_list/',views.GenereAddListView.as_view()),
     path('catagory_list/',views.CatagoryListView.as_view()),
     path('search/',views.SearchView.as_view()),
+    path('search_suggestion/',views.SearchSuggestionListView.as_view()),
+    path('help/',views.HelpView.as_view()),
+    path('feedback/',views.FeedbackView.as_view()),
+    path('sponsors/',views.SponsorsView.as_view()),
+    path('service/',views.ServiceView.as_view()),
+    path('career/',views.CareerView.as_view()),
+    path('about_us/',views.AboutView.as_view()),
+    path('terms_conditions/',views.Terms_conditionsView.as_view()),
+    path('privacy_policy/',views.Privacy_policyView.as_view()),
+    path('WatchTimerLog/',views.WatchTimerLogView.as_view()),
 ]
+

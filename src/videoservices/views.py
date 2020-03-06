@@ -15,6 +15,7 @@ import collections
 from rest_framework import status
 from django.db.models import Count
 from videoservices.models import *
+from mailapp.views import *
 from rest_framework import mixins
 from custom_decorator import *
 from rest_framework.views import APIView
@@ -327,6 +328,7 @@ class VideoListView(generics.ListCreateAPIView,mixins.UpdateModelMixin):
                 data_dict['video']=request.build_absolute_uri(data.video.url)
                 data_dict['title']=data.title
                 data_dict['description']=data.description
+                data_dict['created_at']=data.created_at
                 data_dict['category']={'id':data.category.id,'name':data.category.name}
                 data_dict['private_video']=data.private_video
                 if data.private_video == True:
@@ -343,6 +345,7 @@ class VideoListView(generics.ListCreateAPIView,mixins.UpdateModelMixin):
                 data_dict['video']=request.build_absolute_uri(data.video.url)
                 data_dict['title']=data.title
                 data_dict['description']=data.description
+                data_dict['created_at']=data.created_at
                 data_dict['category']={'id':data.category.id,'name':data.category.name}
                 data_dict['private_video']=data.private_video
                 data_dict['featured_video']=data.featured_video
@@ -603,7 +606,41 @@ class TagsListView(generics.ListCreateAPIView):
                                 },
                                 status=status.HTTP_200_OK)
 
-        
+class SearchSuggestionListView(generics.ListCreateAPIView):
+    permission_classes = [AllowAny]
+    queryset = VideoSearchHistory.objects.filter(is_deleted=False)
+
+    def post(self, request, *args, **kwargs):
+        search_key = request.data.get('search_key')
+        print("search_key",search_key)
+        if search_key:
+            suggestions = VideoSearchHistory.objects.filter(Search_keys__icontains=search_key).values_list('Search_keys',flat=True).distinct()
+        elif search_key == '' or search_key == None:
+            suggestions = VideoSearchHistory.objects.values('Search_keys').order_by('Search_keys').\
+                annotate(search_count=Count('Search_keys')).order_by('-Search_keys')[:15].values_list('Search_keys',flat=True)
+            print("top_suggestions",suggestions)
+
+        else:
+            suggestions = VideoSearchHistory.objects.values('Search_keys').order_by('Search_keys').\
+                annotate(tag_count=Count('Search_keys')).order_by('-Search_keys')[:10].values_list('Search_keys',flat=True)
+            print("top_suggestions",suggestions)
+
+        if len(suggestions)>0:
+            return Response({'request_status':1,
+                                'results':{
+                                    'search_suggestions':list(suggestions),
+                                    'msg':'success'
+                                    },
+                                },
+                                status=status.HTTP_200_OK)
+        else:
+            return Response({'request_status':0,
+                                'results':{
+                                    'search_suggestions':[],
+                                    'msg':'No Data Found'
+                                    },
+                                },
+                                status=status.HTTP_200_OK)
 
 
 class UploadVideoThumbnailAddView(generics.ListCreateAPIView,mixins.UpdateModelMixin):
@@ -743,12 +780,66 @@ class HomeVideoListingView(generics.ListAPIView):
     queryset = Video.objects.filter(is_deleted=False).order_by('-id')
     serializer_class = HomeVideoListingViewSerializer
     
+    def search_in (self,column,operator,value_list):         
+        myfilter = column + '__' + operator
+        q_object = reduce(or_, (Q(**{myfilter:search}) for search in value_list))
+        # print('q_object',q_object)
+        return q_object
+
+    def video_view_count(self,video_id):
+        latest_dict={}
+        view_auth_profile = VideoViews.objects.filter(~Q(Profile=0),video=video_id).\
+             values('Profile').distinct().count()
+        view_guest_profile = VideoViews.objects.filter(Profile=0,video=video_id).\
+            values('ip_address').distinct().count()
+
+        total_video_view_counts= view_auth_profile + view_guest_profile
+        video_id_count_tuple = (video_id,total_video_view_counts)
+
+        return video_id_count_tuple
+
+
+
     def get_queryset(self):
+        current_date = datetime.datetime.now()
+        bench_date = current_date - datetime.timedelta(days=7)
+        print("current_date",current_date)
+        print("bench_date",bench_date)
+        if self.request.user.is_authenticated:
+            current_user_profile = self.request.user.profile.id
+        else:
+            current_user_profile=0
         tab = self.request.query_params.get('tab',None)
         if tab and tab.lower() == 'latest':
-            return self.queryset.order_by('-created_at')
+            video_views_list=[]
+            video_list=Video.objects.filter(is_deleted=False,created_at__lte=current_date,created_at__gte=bench_date).\
+                                values_list('id',flat=True)
+            for video in video_list:
+                video_views_list.append(self.video_view_count(video))
+            
+            sorted_video_list = [x[0] for x in sorted(video_views_list,key = lambda x:x[1],reverse=True)]
+            print("sorted_video_list",sorted_video_list)
+
+            return self.queryset.filter(id__in=sorted_video_list).order_by('-created_at')
         elif tab and tab.lower() == 'recommended':
-            return self.queryset.order_by('?')
+            user_video_view_cat_list=VideoViews.objects.filter(Profile=current_user_profile,is_deleted=False).\
+                                    values('video__category').order_by('video__category').\
+                                    annotate(catagory_count=Count('video__category')).\
+                                        order_by('-catagory_count').values_list('video__category',flat=True)
+
+            user_video_search_list=VideoSearchHistory.objects.filter(Profile=current_user_profile,is_deleted=False).\
+                                    values_list('Search_keys',flat=True)
+
+            user_video_search_cat_list= Video.objects.filter((self.search_in('channel__firstname','icontains',user_video_search_list)|
+                                        self.search_in('channel__lastname','icontains',user_video_search_list)|
+                                        self.search_in('channel__company_name','icontains',user_video_search_list)|
+                                        self.search_in('title','icontains',user_video_search_list)|
+                                        self.search_in('description','icontains',user_video_search_list)),is_deleted=False).\
+                                        values_list('category',flat=True).distinct()
+            final_cat_list = list(set(list(user_video_view_cat_list)+list(user_video_search_cat_list)))
+            print("final_cat_list",final_cat_list)
+
+            return self.queryset.filter(category__in=final_cat_list).order_by('?')
         elif tab and tab.lower() == 'featured':
             return self.queryset.filter(featured_video=True).order_by('-id')
         else:
@@ -1043,8 +1134,6 @@ class PrivateVideoCheckView(generics.ListCreateAPIView):
 
 class SearchView(generics.ListAPIView):
     permission_classes = [AllowAny]
-
-    # authentication_classes = [TokenAuthentication]
     queryset = Video.objects.filter(is_deleted=False)
     
     def search_in (self,column,operator,value_list):         
@@ -1054,23 +1143,32 @@ class SearchView(generics.ListAPIView):
         return q_object
 
     def get(self, request, *args, **kwargs):
-        search = self.request.query_params.get('search', None).split(' ')
+        search = self.request.query_params.get('search', None)
+        if request.user.is_authenticated:
+                profile_id = request.user.profile.id
+                created_by = request.data.get('created_by')
+        else:
+            profile_id=0
+            created_by = None
+        search_history_post = VideoSearchHistory.objects.create(Profile=profile_id,
+                                                Search_keys=search,created_by=created_by)
+        search_list = search.split(' ')
         print("search",search)
         channel_id=[]
         video_id=[]
         if search :
-            channel_name_id= Profile.objects.filter((self.search_in('firstname','icontains',search)|
-                                                    self.search_in('lastname','icontains',search)|
-                                                    self.search_in('company_name','icontains',search)),is_deleted=False).\
+            channel_name_id= Profile.objects.filter((self.search_in('firstname','icontains',search_list)|
+                                                    self.search_in('lastname','icontains',search_list)|
+                                                    self.search_in('company_name','icontains',search_list)),is_deleted=False).\
                                                     values_list('id',flat=True).distinct()
-            vid_id= Video.objects.filter((self.search_in('channel__firstname','icontains',search)|
-                                        self.search_in('channel__lastname','icontains',search)|
-                                        self.search_in('channel__company_name','icontains',search)|
-                                        self.search_in('title','icontains',search)|
-                                        self.search_in('description','icontains',search)),is_deleted=False).\
+            vid_id= Video.objects.filter((self.search_in('channel__firstname','icontains',search_list)|
+                                        self.search_in('channel__lastname','icontains',search_list)|
+                                        self.search_in('channel__company_name','icontains',search_list)|
+                                        self.search_in('title','icontains',search_list)|
+                                        self.search_in('description','icontains',search_list)),is_deleted=False).\
                                         values_list('id',flat=True).distinct()
 
-            tag_vid_id= VideoTags.objects.filter(self.search_in('tags','icontains',search),is_deleted=False).\
+            tag_vid_id= VideoTags.objects.filter(self.search_in('tags','icontains',search_list),is_deleted=False).\
                             values_list('video',flat=True).distinct()
             video_id = list(set(list(vid_id)+list(tag_vid_id)))
             channel_id = list(set(list(channel_name_id)))
@@ -1256,3 +1354,210 @@ class SearchView(generics.ListAPIView):
                                     },
                                 },
                                 status=status.HTTP_200_OK)
+class HelpView(generics.ListCreateAPIView):
+    permission_classes = [AllowAny]
+    queryset = Help.objects.filter(is_deleted=False)
+    pagination_class = OnOffPagination
+    serializer_class = HelpSerializer
+
+
+    @response_modify_decorator_list_or_get_after_execution_for_onoff_pagination
+    def get(self, request, *args, **kwargs):
+        return super(self.__class__,self).get(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        response = super().post(request,*args,**kwargs)
+        email = request.data["email"]
+        query = request.data["query"]
+        name = request.data["name"]
+        # generate_otp = OTP.generate_token()
+        code = "MKCH" + str(int(time.time()))
+
+        mail_id = email
+        if mail_id:
+            mail_data = {
+                'token':code,
+                'email':email,
+                'name':name,
+                'query':query,
+            }
+            mail_class = GlobleMailSend('QUERY', [mail_id])
+            mail_thread = Thread(target = mail_class.mailsend, args = (mail_data,))
+            mail_thread.start()
+    
+        return Response({'request_status': 1,
+            'results':{
+                'email':email,
+                # 'otp':generate_otp,
+                'token':code,
+                },
+            'msg':'Success, Thanks for your query we will get back to you soon. Please check your mailid'
+            },
+            status=status.HTTP_200_OK)
+        # print("RESPONCE",  response.data )
+        # return Response({'request_status': 1,
+        #                     'results':{
+        #                         'msg':'Success, Thanks for your query we will get back to you soon'
+        #                         },
+        #                     },
+        #                     status=status.HTTP_200_OK)
+class FeedbackView(generics.ListCreateAPIView):
+    permission_classes = [AllowAny]
+    queryset = Feedback.objects.filter(is_deleted=False)
+    pagination_class = OnOffPagination
+    serializer_class = FeedbackSerializer
+
+
+    @response_modify_decorator_list_or_get_after_execution_for_onoff_pagination
+    def get(self, request, *args, **kwargs):
+        return super(self.__class__,self).get(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        response = super().post(request,*args,**kwargs)
+        # print("RESPONCE",  response.data )
+        return Response({'request_status': 1,
+                            'results':{
+                                'msg':'Success, Thanks for your feedback we will get back to you, if more information required'
+                                },
+                            },
+                            status=status.HTTP_200_OK)
+
+class SponsorsView(generics.ListCreateAPIView):
+    permission_classes = [AllowAny]
+    queryset = Sponsors.objects.filter(is_deleted=False)
+    pagination_class = OnOffPagination
+    serializer_class = SponsorsSerializer
+
+    @response_modify_decorator_list_or_get_after_execution_for_onoff_pagination
+    def get(self, request, *args, **kwargs):
+        return super(self.__class__,self).get(request, *args, **kwargs)
+
+
+    def post(self, request, *args, **kwargs):
+        response = super().post(request,*args,**kwargs)
+        # print("RESPONCE",  response.data )
+        return Response({'request_status': 1,
+                            'results':{
+                                'msg':'Success, (Sponsors)We Will Get Back To You Soon'
+                                },
+                            },
+                            status=status.HTTP_200_OK)
+
+class ServiceView(generics.ListCreateAPIView):
+    permission_classes = [AllowAny]
+    queryset = Service.objects.filter(is_deleted=False)
+    pagination_class = OnOffPagination
+    serializer_class = ServiceSerializer
+
+
+    @response_modify_decorator_list_or_get_after_execution_for_onoff_pagination
+    def get(self, request, *args, **kwargs):
+        return super(self.__class__,self).get(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        response = super().post(request,*args,**kwargs)
+        return Response({'request_status': 1,
+                            'results':{
+                                'msg':'Success, (Service)We Will Get Back To You Soon'
+                                },
+                            },
+                            status=status.HTTP_200_OK)
+
+class CareerView(generics.ListCreateAPIView):
+    permission_classes = [AllowAny]
+    queryset = Career.objects.filter(is_deleted=False)
+    pagination_class = OnOffPagination
+    serializer_class = CareerSerializer
+
+
+    @response_modify_decorator_list_or_get_after_execution_for_onoff_pagination
+    def get(self, request, *args, **kwargs):
+        return super(self.__class__,self).get(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        response = super().post(request,*args,**kwargs)
+        return Response({'request_status': 1,
+                            'results':{
+                                'msg':'Success, Your data is submited'
+                                },
+                            },
+                            status=status.HTTP_200_OK)
+
+class AboutView(generics.ListCreateAPIView):
+    permission_classes = [AllowAny]
+    queryset = About.objects.filter(is_deleted=False)
+    # pagination_class = OnOffPagination
+    serializer_class = AboutSerializer
+
+
+    # @response_modify_decorator_list_or_get_after_execution_for_onoff_pagination
+    def get(self, request, *args, **kwargs):
+        return super(self.__class__,self).get(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        response = super().post(request,*args,**kwargs)
+        return Response({'request_status': 1,
+                            'results':{
+                                'msg':'Success, About is submitted'
+                                },
+                            },
+                            status=status.HTTP_200_OK)
+
+class Terms_conditionsView(generics.ListCreateAPIView):
+    permission_classes = [AllowAny]
+    queryset = Terms_conditions.objects.filter(is_deleted=False)
+    # pagination_class = OnOffPagination
+    serializer_class = Terms_conditionsSerializer
+
+
+    # @response_modify_decorator_list_or_get_after_execution_for_onoff_pagination
+    def get(self, request, *args, **kwargs):
+        return super(self.__class__,self).get(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        response = super().post(request,*args,**kwargs)
+        return Response({'request_status': 1,
+                            'results':{
+                                'msg':'Success, Terms and Conditions is submitted'
+                                },
+                            },
+                            status=status.HTTP_200_OK)
+
+class Privacy_policyView(generics.ListCreateAPIView):
+    permission_classes = [AllowAny]
+    queryset = Privacy_policy.objects.filter(is_deleted=False)
+    # pagination_class = OnOffPagination
+    serializer_class = Privacy_policySerializer
+
+
+    # @response_modify_decorator_list_or_get_after_execution_for_onoff_pagination
+    def get(self, request, *args, **kwargs):
+        return super(self.__class__,self).get(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        response = super().post(request,*args,**kwargs)
+        return Response({'request_status': 1,
+                            'results':{
+                                'msg':'Success, Privacy Policy is submitted'
+                                },
+                            },
+                            status=status.HTTP_200_OK)
+
+
+class WatchTimerLogView(generics.ListCreateAPIView):
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [TokenAuthentication]
+    queryset = WatchTimerLog.objects.filter(is_deleted=False)
+    serializer_class = WatchTimerLogSerializer
+
+    def post(self, request, *args, **kwargs):
+        profile_id = request.user.profile.id
+        duration = request.data["duration"]
+        WatchTimerLog.objects.create(profile_id=profile_id,duration=duration)
+        response = super(self.__class__,self).post(request, *args, **kwargs)
+        print(response)
+        return Response({'request_status': 1,
+                        'results':response.data,
+                        'msg':'Success'
+                        },
+                        status=status.HTTP_200_OK)

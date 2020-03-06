@@ -13,6 +13,10 @@ from django.db.models import Value
 from threading import Thread  # for threading
 import datetime
 from custom_functions import get_client_ip
+# from .models import Help
+# from .models import Feedback
+# from .models import Sponsors
+# from .models import Service
 
 class EditProfileSerializer(serializers.ModelSerializer):
     updated_by = serializers.CharField(default=serializers.CurrentUserDefault())
@@ -373,3 +377,66 @@ class GenereAddListViewSerializer(serializers.ModelSerializer):
 
         except Exception as e:
             raise e
+
+class HelpSerializer(serializers.ModelSerializer):
+    # created_by = serializers.CharField(default=serializers.CurrentUserDefault())
+    # owned_by = serializers.CharField(default=serializers.CurrentUserDefault())
+    class Meta:
+        model = Help
+        fields = '__all__'
+
+class FeedbackSerializer(serializers.ModelSerializer):
+    # created_by = serializers.CharField(default=serializers.CurrentUserDefault())
+    # owned_by = serializers.CharField(default=serializers.CurrentUserDefault())
+    class Meta:
+        model = Feedback
+        fields = '__all__'
+
+class SponsorsSerializer(serializers.ModelSerializer):
+    # created_by = serializers.CharField(default=serializers.CurrentUserDefault())
+    # owned_by = serializers.CharField(default=serializers.CurrentUserDefault())
+    class Meta:
+        model = Sponsors
+        fields = '__all__'
+
+class ServiceSerializer(serializers.ModelSerializer):
+    # created_by = serializers.CharField(default=serializers.CurrentUserDefault())
+    # owned_by = serializers.CharField(default=serializers.CurrentUserDefault())
+    class Meta:
+        model = Service
+        fields = '__all__'
+
+class CareerSerializer(serializers.ModelSerializer):
+    # created_by = serializers.CharField(default=serializers.CurrentUserDefault())
+    # owned_by = serializers.CharField(default=serializers.CurrentUserDefault())
+    class Meta:
+        model = Career
+        fields = '__all__'
+
+class AboutSerializer(serializers.ModelSerializer):
+    # created_by = serializers.CharField(default=serializers.CurrentUserDefault())
+    # owned_by = serializers.CharField(default=serializers.CurrentUserDefault())
+    class Meta:
+        model = About
+        fields = '__all__'
+
+class Terms_conditionsSerializer(serializers.ModelSerializer):
+    # created_by = serializers.CharField(default=serializers.CurrentUserDefault())
+    # owned_by = serializers.CharField(default=serializers.CurrentUserDefault())
+    class Meta:
+        model = Terms_conditions
+        fields = '__all__'
+
+class Privacy_policySerializer(serializers.ModelSerializer):
+    # created_by = serializers.CharField(default=serializers.CurrentUserDefault())
+    # owned_by = serializers.CharField(default=serializers.CurrentUserDefault())
+    class Meta:
+        model = Privacy_policy
+        fields = '__all__'
+
+class WatchTimerLogSerializer(serializers.ModelSerializer):
+    # created_by = serializers.CharField(default=serializers.CurrentUserDefault())
+    # owned_by = serializers.CharField(default=serializers.CurrentUserDefault())
+    class Meta:
+        model = WatchTimerLog
+        fields = '__all__'

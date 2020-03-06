@@ -151,6 +151,7 @@ class Video(models.Model):
     term_and_conditions = models.BooleanField(default=False)
     age_range = models.CharField(default='21+ or above', choices=AGE_RANGE,max_length=20)
     is_admin_reviewed = models.BooleanField(default=False)
+    is_admin_published = models.BooleanField(default=False)
     is_deleted = models.BooleanField(default=False)
     created_by = models.ForeignKey(User, related_name='v_created_by',
                                    on_delete=models.CASCADE, blank=True, null=True)
@@ -185,6 +186,26 @@ class VideoTags(models.Model):
 
     class Meta:
         db_table = 'videotags'
+
+class VideoSearchHistory(models.Model):
+    Profile = models.IntegerField(default=0)
+    Search_keys = models.CharField(max_length=200,blank=True,null=True)
+    is_deleted = models.BooleanField(default=False)
+    created_by = models.ForeignKey(User, related_name='v_s_h_created_by',
+                                   on_delete=models.CASCADE, blank=True, null=True)
+    owned_by = models.ForeignKey(User, related_name='v_s_h_owned_by',
+                                 on_delete=models.CASCADE, blank=True, null=True)
+    updated_by = models.ForeignKey(User, related_name='v_s_h_updated_by',
+                                   on_delete=models.CASCADE, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return str(self.id)
+
+    class Meta:
+        db_table = 'video_search_history'
+
 
 class VideoThumbnailDocuments(models.Model):
     video = models.ForeignKey(Video, on_delete=models.CASCADE,blank=True,null=True)
@@ -255,6 +276,26 @@ class Subscription(models.Model):
     class Meta:
         db_table = 'Subscription'
 
+
+class MobileDevice(models.Model):
+    participant = models.OneToOneField(User, related_name='device', on_delete=models.CASCADE)
+    platform = models.CharField(max_length=20, choices=(('iOS', 'iOS'), ('Android', 'Android'),))
+    token = models.TextField()
+    is_deleted = models.BooleanField(default=False)
+    created_by = models.ForeignKey(User, related_name='md_created_by',
+                                   on_delete=models.CASCADE, blank=True, null=True)
+    owned_by = models.ForeignKey(User, related_name='md_owned_by',
+                                 on_delete=models.CASCADE, blank=True, null=True)
+    updated_by = models.ForeignKey(User, related_name='md_updated_by',
+                                   on_delete=models.CASCADE, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return str(self.id)
+
+    class Meta:
+        db_table = 'MobileDevice'
 class Notifications(models.Model):
     subscribed= models.ForeignKey(Profile,on_delete=models.CASCADE, blank=True, null=True)
     notify = models.ForeignKey(Video,on_delete=models.CASCADE, blank=True, null=True)
@@ -285,3 +326,179 @@ class Notifications(models.Model):
 
 #     def __str__(self):
 #         return self.user.username+" "+self.text
+
+class Help(models.Model):
+    name = models.CharField( max_length=500)
+    email = models.EmailField( max_length=500)
+    mobile = models.CharField(max_length=11)
+    query = models.TextField()
+    is_deleted = models.BooleanField(default=False)
+    created_by = models.ForeignKey(User, related_name='h_created_by',
+                                   on_delete=models.CASCADE, blank=True, null=True)
+    owned_by = models.ForeignKey(User, related_name='h_owned_by',
+                                 on_delete=models.CASCADE, blank=True, null=True)
+    updated_by = models.ForeignKey(User, related_name='h_updated_by',
+                                   on_delete=models.CASCADE, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    def __str__(self):
+        return str(self.id)
+
+    class Meta:
+        db_table = 'help'
+
+class Feedback(models.Model):
+    name = models.CharField( max_length=500)
+    email = models.EmailField( max_length=500)
+    mobile = models.CharField(max_length=11)
+    feedback = models.TextField()
+    is_deleted = models.BooleanField(default=False)
+    created_by = models.ForeignKey(User, related_name='f_created_by',
+                                   on_delete=models.CASCADE, blank=True, null=True)
+    owned_by = models.ForeignKey(User, related_name='f_owned_by',
+                                 on_delete=models.CASCADE, blank=True, null=True)
+    updated_by = models.ForeignKey(User, related_name='f_updated_by',
+                                   on_delete=models.CASCADE, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    def __str__(self):
+        return str(self.id)
+
+    class Meta:
+        db_table = 'feedback'
+
+class Sponsors(models.Model):
+    name = models.CharField( max_length=500)
+    email = models.EmailField( max_length=500)
+    mobile = models.CharField(max_length=11)
+    is_deleted = models.BooleanField(default=False)
+    created_by = models.ForeignKey(User, related_name='sp_created_by',
+                                   on_delete=models.CASCADE, blank=True, null=True)
+    owned_by = models.ForeignKey(User, related_name='sp_owned_by',
+                                 on_delete=models.CASCADE, blank=True, null=True)
+    updated_by = models.ForeignKey(User, related_name='sp_updated_by',
+                                   on_delete=models.CASCADE, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    def __str__(self):
+        return str(self.id)
+
+    class Meta:
+        db_table = 'sponsers'
+
+class Service(models.Model):
+    name = models.CharField( max_length=500)
+    email = models.EmailField( max_length=500)
+    mobile = models.CharField(max_length=11)
+    is_deleted = models.BooleanField(default=False)
+    created_by = models.ForeignKey(User, related_name='ser_created_by',
+                                   on_delete=models.CASCADE, blank=True, null=True)
+    owned_by = models.ForeignKey(User, related_name='ser_owned_by',
+                                 on_delete=models.CASCADE, blank=True, null=True)
+    updated_by = models.ForeignKey(User, related_name='ser_updated_by',
+                                   on_delete=models.CASCADE, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    def __str__(self):
+        return str(self.id)
+
+    class Meta:
+        db_table = 'service'
+
+class Career(models.Model):
+    name = models.CharField( max_length=500)
+    email = models.EmailField( max_length=500)
+    mobile = models.CharField(max_length=11)
+    message = models.TextField()
+    address = models.CharField(max_length=500)
+    doc = models.FileField(upload_to="docs")
+    is_deleted = models.BooleanField(default=False)
+    created_by = models.ForeignKey(User, related_name='car_created_by',
+                                   on_delete=models.CASCADE, blank=True, null=True)
+    owned_by = models.ForeignKey(User, related_name='car_owned_by',
+                                 on_delete=models.CASCADE, blank=True, null=True)
+    updated_by = models.ForeignKey(User, related_name='car_updated_by',
+                                   on_delete=models.CASCADE, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    def __str__(self):
+        return str(self.id)
+
+    class Meta:
+        db_table = 'career'
+
+class About(models.Model):
+    title = models.CharField( max_length=500, blank=True, null=True)
+    description = models.TextField()
+    doc = models.FileField(upload_to="docs", blank=True, null=True)
+    is_deleted = models.BooleanField(default=False)
+    created_by = models.ForeignKey(User, related_name='ab_created_by',
+                                   on_delete=models.CASCADE, blank=True, null=True)
+    owned_by = models.ForeignKey(User, related_name='ab_owned_by',
+                                 on_delete=models.CASCADE, blank=True, null=True)
+    updated_by = models.ForeignKey(User, related_name='ab_updated_by',
+                                   on_delete=models.CASCADE, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    def __str__(self):
+        return str(self.id)
+
+    class Meta:
+        db_table = 'about'
+
+class Terms_conditions(models.Model):
+    title = models.CharField( max_length=500, blank=True, null=True)
+    description = models.TextField()
+    doc = models.FileField(upload_to="docs", blank=True, null=True)
+    is_deleted = models.BooleanField(default=False)
+    created_by = models.ForeignKey(User, related_name='tc_created_by',
+                                   on_delete=models.CASCADE, blank=True, null=True)
+    owned_by = models.ForeignKey(User, related_name='tc_owned_by',
+                                 on_delete=models.CASCADE, blank=True, null=True)
+    updated_by = models.ForeignKey(User, related_name='tc_updated_by',
+                                   on_delete=models.CASCADE, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    def __str__(self):
+        return str(self.id)
+
+    class Meta:
+        db_table = 'terms_conditions'
+
+class Privacy_policy(models.Model):
+    title = models.CharField( max_length=500, blank=True, null=True)
+    description = models.TextField()
+    doc = models.FileField(upload_to="docs", blank=True, null=True)
+    is_deleted = models.BooleanField(default=False)
+    created_by = models.ForeignKey(User, related_name='pp_created_by',
+                                   on_delete=models.CASCADE, blank=True, null=True)
+    owned_by = models.ForeignKey(User, related_name='pp_owned_by',
+                                 on_delete=models.CASCADE, blank=True, null=True)
+    updated_by = models.ForeignKey(User, related_name='pp_updated_by',
+                                   on_delete=models.CASCADE, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    def __str__(self):
+        return str(self.id)
+
+    class Meta:
+        db_table = 'privacy_policy'
+
+class WatchTimerLog(models.Model):
+    profile = models.ForeignKey(Profile,on_delete=models.CASCADE)
+    duration = models.CharField(max_length=100)
+    is_deleted = models.BooleanField(default=False)
+    created_by = models.ForeignKey(User, related_name='wtl_created_by',
+                                   on_delete=models.CASCADE, blank=True, null=True)
+    owned_by = models.ForeignKey(User, related_name='wtl_owned_by',
+                                 on_delete=models.CASCADE, blank=True, null=True)
+    updated_by = models.ForeignKey(User, related_name='wtl_updated_by',
+                                   on_delete=models.CASCADE, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    def __str__(self):
+        return str(self.id)
+
+    class Meta:
+        db_table = 'watchTimerLog'
+
