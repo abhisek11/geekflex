@@ -494,3 +494,127 @@ class AdminPublishUpdateView(generics.RetrieveUpdateAPIView):
     @response_modify_decorator_update
     def put(self, request, *args, **kwargs):
         return super(self.__class__,self).put(request, *args, **kwargs)
+
+class PaymentPlanCreateView(generics.ListCreateAPIView,mixins.UpdateModelMixin):
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [TokenAuthentication]
+    queryset = PaymentPlan.objects.filter(is_deleted=False)
+    serializer_class = PaymentPlanCreateViewSerializer
+    pagination_class = OnOffPagination
+
+    def get_queryset(self):
+        paymentplan_id = self.request.query_params.get('paymentplan_id', None)
+        if paymentplan_id:
+            return self.queryset.filter(id=paymentplan_id,is_deleted=False)
+        else:
+            return self.queryset
+
+    @response_modify_decorator_list_or_get_after_execution_for_onoff_pagination
+    def get(self, request, *args, **kwargs):
+        return super(self.__class__,self).get(request, *args, **kwargs)
+
+    @response_modify_decorator_post
+    def post(self, request, *args, **kwargs):
+        return super(self.__class__,self).post(request, *args, **kwargs)
+    
+    def put(self, request, *args, **kwargs):
+        paymentplan_id = self.request.query_params.get('paymentplan_id', None)
+        method = self.request.query_params.get('method', None)
+        updated_by=request.user
+        with transaction.atomic():
+            if method.lower() == 'edit':
+                title=request.data['title'] if request.data['title'] else None
+                description=request.data['description']  if request.data['description'] else None
+                amount=request.data['amount']  if request.data['amount'] else 0
+                validity=request.data['validity']  if request.data['validity'] else 0
+                active_status =request.data['active_status']  if request.data['active_status'] else False
+                paymentplan_update = PaymentPlan.objects.filter(id=paymentplan_id,is_deleted=False).\
+                                        update(title=title,description=description,amount=amount,validity=validity,
+                                                active_status=active_status,updated_by=updated_by)
+                if paymentplan_update:
+                    data = PaymentPlan.objects.get(id=paymentplan_id,is_deleted=False)
+                    data.__dict__.pop('_state')
+                    return Response({'results': data.__dict__,
+                                        'msg': 'success',
+                                        "request_status": 1})
+                else:
+                    return Response({'results': [],
+                                    'msg': 'fail',
+                                    "request_status": 0})
+            
+            elif method.lower() == 'delete':
+                paymentplan_update = PaymentPlan.objects.filter(id=paymentplan_id,is_deleted=False).\
+                                        update(is_deleted=True)
+                if paymentplan_update:
+                    return Response({'results':{
+                                        'paymentplan_id':paymentplan_id ,
+                                        },
+                                        'msg': 'deleted successfully',
+                                        "request_status": 1})
+                else:
+                    return Response({'results': [],
+                                    'msg': 'fail to delete',
+                                    "request_status": 0})
+
+class PlanBenifitCreateView(generics.ListCreateAPIView,mixins.UpdateModelMixin):
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [TokenAuthentication]
+    queryset = PlanBenifits.objects.filter(is_deleted=False)
+    serializer_class = PlanBenifitsCreateViewSerializer
+    pagination_class = OnOffPagination
+
+    def get_queryset(self):
+        planbenifits_id = self.request.query_params.get('planbenifits_id', None)
+        if planbenifits_id:
+            return self.queryset.filter(id=planbenifits_id,is_deleted=False)
+        else:
+            return self.queryset
+
+    @response_modify_decorator_list_or_get_after_execution_for_onoff_pagination
+    def get(self, request, *args, **kwargs):
+        return super(self.__class__,self).get(request, *args, **kwargs)
+
+    @response_modify_decorator_post
+    def post(self, request, *args, **kwargs):
+        return super(self.__class__,self).post(request, *args, **kwargs)
+    
+    def put(self, request, *args, **kwargs):
+        planbenifits_id = self.request.query_params.get('planbenifits_id', None)
+        method = self.request.query_params.get('method', None)
+        updated_by=request.user
+        with transaction.atomic():
+            if method.lower() == 'edit':
+                plan=request.data['plan'] if request.data['plan'] else None
+                extra_child=request.data['extra_child']  if request.data['extra_child'] else None
+                featured_video=request.data['featured_video']  if request.data['featured_video'] else False
+                featured_video_display_days=request.data['featured_video_display_days']  if request.data['featured_video_display_days'] else 0
+                ads_blocking =request.data['ads_blocking']  if request.data['ads_blocking'] else False
+                child_report_generation =request.data['child_report_generation']  if request.data['child_report_generation'] else False
+                planbenifits_update = PlanBenifits.objects.filter(id=planbenifits_id,is_deleted=False).\
+                                        update(plan=plan,extra_child=extra_child,featured_video=featured_video,ads_blocking=ads_blocking,
+                                                child_report_generation=child_report_generation,
+                                                featured_video_display_days=featured_video_display_days,updated_by=updated_by)
+                if planbenifits_update:
+                    data = PlanBenifits.objects.get(id=planbenifits_id,is_deleted=False)
+                    data.__dict__.pop('_state')
+                    return Response({'results': data.__dict__,
+                                        'msg': 'success',
+                                        "request_status": 1})
+                else:
+                    return Response({'results': [],
+                                    'msg': 'fail',
+                                    "request_status": 0})
+            
+            elif method.lower() == 'delete':
+                planbenifits_update = PlanBenifits.objects.filter(id=planbenifits_id,is_deleted=False).\
+                                        update(is_deleted=True)
+                if planbenifits_update:
+                    return Response({'results':{
+                                        'planbenifits_id':planbenifits_id ,
+                                        },
+                                        'msg': 'deleted successfully',
+                                        "request_status": 1})
+                else:
+                    return Response({'results': [],
+                                    'msg': 'fail to delete',
+                                    "request_status": 0})

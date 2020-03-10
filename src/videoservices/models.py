@@ -316,6 +316,79 @@ class Notifications(models.Model):
     class Meta:
         db_table = 'Notifications'
 
+#******************PAYMENTS SECTION*****************************************
+class PaymentPlan(models.Model):
+    title = models.CharField(max_length=200,blank=True,null=True)
+    description = models.CharField(max_length=500,blank=True,null=True)
+    amount = models.IntegerField(blank=True,null=True,default=0)
+    validity = models.IntegerField(blank=True,null=True)
+    active_status = models.BooleanField(default=False)
+    is_deleted = models.BooleanField(default=False)
+    created_by = models.ForeignKey(User, related_name='pa_p_created_by',
+                                   on_delete=models.CASCADE, blank=True, null=True)
+    owned_by = models.ForeignKey(User, related_name='pa_p_owned_by',
+                                 on_delete=models.CASCADE, blank=True, null=True)
+    updated_by = models.ForeignKey(User, related_name='pa_p_updated_by',
+                                   on_delete=models.CASCADE, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return str(self.id)
+
+    class Meta:
+        db_table = 'payment_plan'
+
+class PlanBenifits(models.Model):
+    plan= models.ForeignKey(PaymentPlan,on_delete=models.CASCADE, blank=True, null=True)
+    extra_child = models.IntegerField(blank=True,null=True,default=0)
+    featured_video = models.BooleanField(default=False)
+    featured_video_display_days = models.IntegerField(blank=True,null=True,default=0)
+    ads_blocking = models.BooleanField(default=False)
+    child_report_generation = models.BooleanField(default=False)
+    is_deleted = models.BooleanField(default=False)
+    created_by = models.ForeignKey(User, related_name='pa_b_created_by',
+                                   on_delete=models.CASCADE, blank=True, null=True)
+    owned_by = models.ForeignKey(User, related_name='pa_b_owned_by',
+                                 on_delete=models.CASCADE, blank=True, null=True)
+    updated_by = models.ForeignKey(User, related_name='pa_b_updated_by',
+                                   on_delete=models.CASCADE, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return str(self.id)
+
+    class Meta:
+        db_table = 'plan_benifits'
+
+
+class UserPaymentTransaction(models.Model):
+    profile= models.ForeignKey(Profile,on_delete=models.CASCADE, blank=True, null=True)
+    plan= models.ForeignKey(PaymentPlan,on_delete=models.CASCADE, blank=True, null=True)
+    payed_amount = models.IntegerField(blank=True,null=True)
+    status = models.BooleanField(default=False)
+    transaction_id = models.CharField(max_length=200,blank=True,null=True)
+    payment_date = models.DateTimeField(auto_now_add=True)
+    is_deleted = models.BooleanField(default=False)
+    created_by = models.ForeignKey(User, related_name='upt_created_by',
+                                   on_delete=models.CASCADE, blank=True, null=True)
+    owned_by = models.ForeignKey(User, related_name='upt_owned_by',
+                                 on_delete=models.CASCADE, blank=True, null=True)
+    updated_by = models.ForeignKey(User, related_name='upt_updated_by',
+                                   on_delete=models.CASCADE, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return str(self.id)
+
+    class Meta:
+        db_table = 'user_payment_transaction'
+
+
+
+
 # class Review(models.Model):
 #     user = models.ForeignKey(User, on_delete=models.CASCADE)
 #     video = models.ForeignKey(Video, on_delete=models.CASCADE)

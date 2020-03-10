@@ -221,3 +221,62 @@ class AdminPublishUpdateViewSerializer(serializers.ModelSerializer):
     class Meta:
         model=Video
         fields=('id','is_admin_published','updated_by','updated_at')
+
+
+class PaymentPlanCreateViewSerializer(serializers.ModelSerializer):
+    created_by = serializers.CharField(default=serializers.CurrentUserDefault())
+    owned_by = serializers.CharField(default=serializers.CurrentUserDefault())
+
+    class Meta:
+        model=PaymentPlan
+        fields=('__all__')
+
+    def create(self,validated_data):
+        try:
+            request =  self.context.get('request')
+            title = validated_data.get('title')
+            description= validated_data.get('description')
+            amount= validated_data.get('amount')
+            validity= validated_data.get('validity')
+            active_status= validated_data.get('active_status')
+            created_by=validated_data.get('created_by')
+            owned_by=validated_data.get('owned_by')
+
+            with transaction.atomic():
+                payment_plan_add = PaymentPlan.objects.create(title=title,description=description,amount=amount,validity=validity,
+                                                                active_status=active_status,created_by=created_by,owned_by=owned_by)
+
+                return validated_data
+
+        except Exception as e:
+            raise e
+
+class PlanBenifitsCreateViewSerializer(serializers.ModelSerializer):
+    created_by = serializers.CharField(default=serializers.CurrentUserDefault())
+    owned_by = serializers.CharField(default=serializers.CurrentUserDefault())
+
+    class Meta:
+        model=PlanBenifits
+        fields=('__all__')
+
+    def create(self,validated_data):
+        try:
+            request =  self.context.get('request')
+            plan = validated_data.get('plan')
+            extra_child= validated_data.get('extra_child')
+            featured_video= validated_data.get('featured_video')
+            featured_video_display_days= validated_data.get('featured_video_display_days')
+            ads_blocking= validated_data.get('ads_blocking')
+            child_report_generation= validated_data.get('child_report_generation')
+            created_by=validated_data.get('created_by')
+            owned_by=validated_data.get('owned_by')
+
+            with transaction.atomic():
+                payment_benifit_add = PlanBenifits.objects.create(plan=plan,extra_child=extra_child,featured_video=featured_video,ads_blocking=ads_blocking,
+                                                                child_report_generation=child_report_generation,featured_video_display_days=featured_video_display_days,
+                                                                created_by=created_by,owned_by=owned_by)
+
+                return validated_data
+
+        except Exception as e:
+            raise e

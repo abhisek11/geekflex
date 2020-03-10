@@ -84,5 +84,14 @@ class Privacy_policy(admin.ModelAdmin):
 class WatchTimerLog(admin.ModelAdmin):
     list_display = [field.name for field in WatchTimerLog._meta.fields]
 
+@admin.register(PaymentPlan)
+class PaymentPlan(admin.ModelAdmin):
+    list_display = [field.name for field in PaymentPlan._meta.fields]
 
+@admin.register(PlanBenifits)
+class PlanBenifits(admin.ModelAdmin):
+    list_display = [field.name for field in PlanBenifits._meta.fields]
 
+@admin.register(UserPaymentTransaction)
+class UserPaymentTransaction(admin.ModelAdmin):
+    list_display = [field.name for field in UserPaymentTransaction._meta.fields]

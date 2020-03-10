@@ -16,6 +16,8 @@ urlpatterns = [
     path('video_review_list/',views.VideoListView.as_view()),
     path('admin_video_review/<pk>/',views.AdminReviewUpdateView.as_view()),
     path('admin_video_publish/<pk>/',views.AdminPublishUpdateView.as_view()),
+    path('payment_plan_create/',views.PaymentPlanCreateView.as_view()),
+    path('plan_benifits_create/',views.PlanBenifitCreateView.as_view()),
 
 
 ]

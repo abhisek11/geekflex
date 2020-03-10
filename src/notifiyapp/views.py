@@ -15,14 +15,14 @@ class GlobleNotifiyFCM(object):
         self.code = code
         self.recipient_list = recipient_list
 
-    def sendSMS(self,sms_data:dict,type):
-        sms_content = SmsContain.objects.get(code = self.code)
-        contain_variable = sms_content.contain_variable.split(",")
-        txt_content = Template(sms_content.txt_content)
+    def sendSMS(self,notify_data:dict,type):
+        notify_content = NotifyTemplet.objects.get(code = self.code)
+        contain_variable = notify_content.contain_variable.split(",")
+        txt_content = Template(notify_content.txt_content)
         match_data_dict = {}
         for data in contain_variable:
-            if data.strip() in sms_data:
-                match_data_dict[data.strip()] = sms_data[data.strip()]
+            if data.strip() in notify_data:
+                match_data_dict[data.strip()] = notify_data[data.strip()]
 
         if match_data_dict:
             context_data = Context(match_data_dict)
@@ -43,13 +43,13 @@ class GlobleNotifiyFCM(object):
                     "param2":"12.00",
                     "notification_foreground": "true"
                 },
-                    "to":"eVSChYlsiRU:APA91bHABMiX1nPH_1lsjFCz74pABu5JiOjCct8uAd1m3L7NvtfUpdVeOsBrGueGybTtzl41i_FNbWiyBGZsQ4w65ppN3xSdAaPWxfj3XbwSAaIXhWxc0gcParJ_JZvckOwWiZzUKtRK",
-                    "priority":"high",
-                    "restricted_package_name":""
+                "to":"eVSChYlsiRU:APA91bHABMiX1nPH_1lsjFCz74pABu5JiOjCct8uAd1m3L7NvtfUpdVeOsBrGueGybTtzl41i_FNbWiyBGZsQ4w65ppN3xSdAaPWxfj3XbwSAaIXhWxc0gcParJ_JZvckOwWiZzUKtRK",
+                "priority":"high",
+                "restricted_package_name":""
                 }
             )
         data = data.encode('utf-8')
-        request = urllib.request.Request("https://api.textlocal.in/send/?")
+        request = urllib.request.Request("https://fcm.googleapis.com/fcm/send")
         f = urllib.request.urlopen(request, data)
         fr = f.read()
         print('fr',fr)
@@ -58,10 +58,10 @@ class GlobleNotifiyFCM(object):
 
 #######################3
 message_data = {
-                        'otp':generate_otp,
-                        'phone':mobile_number,
-
-                    }
-                    sms_class = GlobleSmsSendTxtLocal('OTP-V',[mobile_number])
-                    sms_thread = Thread(target = sms_class.sendSMS, args = (message_data,'sms'))
-                    sms_thread.start()
+                "title":"Notification title 11",
+                "body":"Notification body 11",
+                "to":"eVSChYlsiRU:APA91bHABMiX1nPH_1lsjFCz74pABu5JiOjCct8uAd1m3L7NvtfUpdVeOsBrGueGybTtzl41i_FNbWiyBGZsQ4w65ppN3xSdAaPWxfj3XbwSAaIXhWxc0gcParJ_JZvckOwWiZzUKtRK",
+                }
+sms_class = GlobleNotifiyFCM('OTP-V',[mobile_number])
+sms_thread = Thread(target = sms_class.sendSMS, args = (message_data,'sms'))
+sms_thread.start()
