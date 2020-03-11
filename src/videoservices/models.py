@@ -147,6 +147,7 @@ class Video(models.Model):
     category = models.ForeignKey(Genere, on_delete=models.CASCADE,blank=True,null=True)
     private_video = models.BooleanField(default=False)
     featured_video = models.BooleanField(default=False)
+    duration = models.IntegerField(default=0)
     private_code = models.CharField(max_length=10,blank=True,null=True)
     term_and_conditions = models.BooleanField(default=False)
     age_range = models.CharField(default='21+ or above', choices=AGE_RANGE,max_length=20)
@@ -387,8 +388,6 @@ class UserPaymentTransaction(models.Model):
         db_table = 'user_payment_transaction'
 
 
-
-
 # class Review(models.Model):
 #     user = models.ForeignKey(User, on_delete=models.CASCADE)
 #     video = models.ForeignKey(Video, on_delete=models.CASCADE)
@@ -401,8 +400,8 @@ class UserPaymentTransaction(models.Model):
 #         return self.user.username+" "+self.text
 
 class Help(models.Model):
-    name = models.CharField( max_length=500)
-    email = models.EmailField( max_length=500)
+    name = models.CharField( max_length=200)
+    email = models.EmailField( max_length=200)
     mobile = models.CharField(max_length=11)
     query = models.TextField()
     is_deleted = models.BooleanField(default=False)
@@ -421,8 +420,8 @@ class Help(models.Model):
         db_table = 'help'
 
 class Feedback(models.Model):
-    name = models.CharField( max_length=500)
-    email = models.EmailField( max_length=500)
+    name = models.CharField( max_length=200)
+    email = models.EmailField( max_length=200)
     mobile = models.CharField(max_length=11)
     feedback = models.TextField()
     is_deleted = models.BooleanField(default=False)
@@ -441,8 +440,8 @@ class Feedback(models.Model):
         db_table = 'feedback'
 
 class Sponsors(models.Model):
-    name = models.CharField( max_length=500)
-    email = models.EmailField( max_length=500)
+    name = models.CharField( max_length=200)
+    email = models.EmailField( max_length=200)
     mobile = models.CharField(max_length=11)
     is_deleted = models.BooleanField(default=False)
     created_by = models.ForeignKey(User, related_name='sp_created_by',
@@ -460,8 +459,8 @@ class Sponsors(models.Model):
         db_table = 'sponsers'
 
 class Service(models.Model):
-    name = models.CharField( max_length=500)
-    email = models.EmailField( max_length=500)
+    name = models.CharField( max_length=200)
+    email = models.EmailField( max_length=200)
     mobile = models.CharField(max_length=11)
     is_deleted = models.BooleanField(default=False)
     created_by = models.ForeignKey(User, related_name='ser_created_by',
@@ -479,8 +478,8 @@ class Service(models.Model):
         db_table = 'service'
 
 class Career(models.Model):
-    name = models.CharField( max_length=500)
-    email = models.EmailField( max_length=500)
+    name = models.CharField( max_length=200)
+    email = models.EmailField( max_length=200)
     mobile = models.CharField(max_length=11)
     message = models.TextField()
     address = models.CharField(max_length=500)
@@ -501,7 +500,7 @@ class Career(models.Model):
         db_table = 'career'
 
 class About(models.Model):
-    title = models.CharField( max_length=500, blank=True, null=True)
+    title = models.CharField( max_length=200)
     description = models.TextField()
     doc = models.FileField(upload_to="docs", blank=True, null=True)
     is_deleted = models.BooleanField(default=False)
@@ -519,8 +518,8 @@ class About(models.Model):
     class Meta:
         db_table = 'about'
 
-class Terms_conditions(models.Model):
-    title = models.CharField( max_length=500, blank=True, null=True)
+class TermsConditions(models.Model):
+    title = models.CharField( max_length=200)
     description = models.TextField()
     doc = models.FileField(upload_to="docs", blank=True, null=True)
     is_deleted = models.BooleanField(default=False)
@@ -536,10 +535,10 @@ class Terms_conditions(models.Model):
         return str(self.id)
 
     class Meta:
-        db_table = 'terms_conditions'
+        db_table = 'terms_condition'
 
-class Privacy_policy(models.Model):
-    title = models.CharField( max_length=500, blank=True, null=True)
+class PrivacyPolicy(models.Model):
+    title = models.CharField( max_length=500)
     description = models.TextField()
     doc = models.FileField(upload_to="docs", blank=True, null=True)
     is_deleted = models.BooleanField(default=False)
@@ -555,7 +554,7 @@ class Privacy_policy(models.Model):
         return str(self.id)
 
     class Meta:
-        db_table = 'privacy_policy'
+        db_table = 'privacy_policys'
 
 class WatchTimerLog(models.Model):
     profile = models.ForeignKey(Profile,on_delete=models.CASCADE)

@@ -72,13 +72,13 @@ class Career(admin.ModelAdmin):
 class About(admin.ModelAdmin):
     list_display = [field.name for field in About._meta.fields]
 
-@admin.register(Terms_conditions)
-class Terms_conditions(admin.ModelAdmin):
-    list_display = [field.name for field in Terms_conditions._meta.fields]
+@admin.register(TermsConditions)
+class TermsConditions(admin.ModelAdmin):
+    list_display = [field.name for field in TermsConditions._meta.fields]
 
-@admin.register(Privacy_policy)
-class Privacy_policy(admin.ModelAdmin):
-    list_display = [field.name for field in Privacy_policy._meta.fields]
+@admin.register(PrivacyPolicy)
+class PrivacyPolicy(admin.ModelAdmin):
+    list_display = [field.name for field in PrivacyPolicy._meta.fields]
 
 @admin.register(WatchTimerLog)
 class WatchTimerLog(admin.ModelAdmin):
@@ -95,3 +95,4 @@ class PlanBenifits(admin.ModelAdmin):
 @admin.register(UserPaymentTransaction)
 class UserPaymentTransaction(admin.ModelAdmin):
     list_display = [field.name for field in UserPaymentTransaction._meta.fields]
+

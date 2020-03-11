@@ -222,7 +222,6 @@ class AdminPublishUpdateViewSerializer(serializers.ModelSerializer):
         model=Video
         fields=('id','is_admin_published','updated_by','updated_at')
 
-
 class PaymentPlanCreateViewSerializer(serializers.ModelSerializer):
     created_by = serializers.CharField(default=serializers.CurrentUserDefault())
     owned_by = serializers.CharField(default=serializers.CurrentUserDefault())

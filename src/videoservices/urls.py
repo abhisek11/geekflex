@@ -36,8 +36,8 @@ urlpatterns = [
     path('service/',views.ServiceView.as_view()),
     path('career/',views.CareerView.as_view()),
     path('about_us/',views.AboutView.as_view()),
-    path('terms_conditions/',views.Terms_conditionsView.as_view()),
-    path('privacy_policy/',views.Privacy_policyView.as_view()),
+    path('terms_conditions/',views.TermsConditionsView.as_view()),
+    path('privacy_policy/',views.PrivacyPolicyView.as_view()),
     path('WatchTimerLog/',views.WatchTimerLogView.as_view()),
 ]
 

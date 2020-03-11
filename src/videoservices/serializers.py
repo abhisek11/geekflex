@@ -420,18 +420,18 @@ class AboutSerializer(serializers.ModelSerializer):
         model = About
         fields = '__all__'
 
-class Terms_conditionsSerializer(serializers.ModelSerializer):
+class TermsConditionsViewSerializer(serializers.ModelSerializer):
     # created_by = serializers.CharField(default=serializers.CurrentUserDefault())
     # owned_by = serializers.CharField(default=serializers.CurrentUserDefault())
     class Meta:
-        model = Terms_conditions
+        model = TermsConditions
         fields = '__all__'
 
-class Privacy_policySerializer(serializers.ModelSerializer):
+class PrivacyPolicyViewSerializer(serializers.ModelSerializer):
     # created_by = serializers.CharField(default=serializers.CurrentUserDefault())
     # owned_by = serializers.CharField(default=serializers.CurrentUserDefault())
     class Meta:
-        model = Privacy_policy
+        model = PrivacyPolicy
         fields = '__all__'
 
 class WatchTimerLogSerializer(serializers.ModelSerializer):

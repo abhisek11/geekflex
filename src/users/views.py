@@ -685,6 +685,33 @@ class ForgotPasswordView(generics.ListCreateAPIView):
         else:
             raise APIException({'request_status': 0,'result':{'msg': "User does not exist."}})
 
+# class SubChildLoginView(generics.ListCreateAPIView):
+#     permission_classes = [AllowAny]
+#     queryset = SubChildProfile.objects.filter(is_deleted=False)
+
+#     @response_modify_decorator_post
+#     def post(self, request,*args,**kwargs):
+#         try:
+#             data = {}                
+#             if auth_provider.lower() == 'Subchild':
+#                 subchild_userid = request.data['subchild_id']
+#                 password = request.data['password']
+
+#             subchild = SubChildProfile.objects.get(id=subchild_userid,is_deleted=False)
+#             try:
+#                 if request.user.profile.account.lower() == 'parent':
+#                     parent_id = request.user.profile.id  
+
+#             except(TypeError, ValueError, OverflowError, User.DoesNotExist): 
+#                 raise CustomAPIException(None,'Matching User does not exist !',status_code=status.HTTP_404_NOT_FOUND)
+#             if subchild.profile == parent_id:
+#                 user_details_exiest = Profile.objects.get(id=parent_id,is_deleted=False).user.id
+#                 user = User.objects.get(id=user_details_exiest)
+#                 if user.check_password(password) == True:
+
+
+
+
 '''
 Login with restauth token : ----  single device 
 

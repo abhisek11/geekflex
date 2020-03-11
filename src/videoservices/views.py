@@ -252,6 +252,7 @@ class UploadVideoAddView(generics.ListCreateAPIView,mixins.UpdateModelMixin):
         updated_by=request.user
         title=request.data['title'] if request.data['title'] else None
         tags=request.data['tags']  if request.data['tags'] else None
+        duration=request.data['duration']  if request.data['duration'] else 0
         description=request.data['description']  if request.data['description'] else None
         category=request.data['category']  if request.data['category'] else None
         private_video=request.data['private_video']  if request.data['private_video'] else False
@@ -268,7 +269,7 @@ class UploadVideoAddView(generics.ListCreateAPIView,mixins.UpdateModelMixin):
         print("private_code",private_code)
         video_details_update = Video.objects.filter(id=vid_id,is_deleted=False).\
                                 update(title=title,description=description,featured_video=featured_video,
-                                category=category,private_video=private_video,private_code=private_code,
+                                category=category,duration=duration,private_video=private_video,private_code=private_code,
                                 term_and_conditions=term_and_conditions,age_range=age_range,updated_by=updated_by)
         
         previous_tag_list = VideoTags.objects.filter(video_id=vid_id,is_deleted=False).values_list('tags',flat=True)
@@ -328,6 +329,7 @@ class VideoListView(generics.ListCreateAPIView,mixins.UpdateModelMixin):
                 data_dict['video']=request.build_absolute_uri(data.video.url)
                 data_dict['title']=data.title
                 data_dict['description']=data.description
+                data_dict['duration']=data.duration
                 data_dict['created_at']=data.created_at
                 data_dict['category']={'id':data.category.id,'name':data.category.name}
                 data_dict['private_video']=data.private_video
@@ -345,6 +347,7 @@ class VideoListView(generics.ListCreateAPIView,mixins.UpdateModelMixin):
                 data_dict['video']=request.build_absolute_uri(data.video.url)
                 data_dict['title']=data.title
                 data_dict['description']=data.description
+                data_dict['duration']=data.duration
                 data_dict['created_at']=data.created_at
                 data_dict['category']={'id':data.category.id,'name':data.category.name}
                 data_dict['private_video']=data.private_video
@@ -495,6 +498,7 @@ class WatchHistoryVideoListView(generics.ListCreateAPIView):
             data_dict['video']=request.build_absolute_uri(data.video.url)
             data_dict['title']=data.title
             data_dict['description']=data.description
+            data_dict['duration']=data.duration
             data_dict['category']={'id':data.category.id,'name':data.category.name}
             data_dict['private_video']=data.private_video
             data_dict['featured_video']=data.featured_video
@@ -1190,6 +1194,7 @@ class SearchView(generics.ListAPIView):
                 data_dict['video']=request.build_absolute_uri(data.video.url)
                 data_dict['title']=data.title
                 data_dict['description']=data.description
+                data_dict['duration']=data.duration
                 data_dict['category']={'id':data.category.id,'name':data.category.name}
                 data_dict['private_video']=data.private_video
                 data_dict['featured_video']=data.featured_video
@@ -1390,8 +1395,9 @@ class HelpView(generics.ListCreateAPIView):
                 'email':email,
                 # 'otp':generate_otp,
                 'token':code,
+                'msg':'Success, Thanks for your query we will get back to you soon. Please check your mailid'
                 },
-            'msg':'Success, Thanks for your query we will get back to you soon. Please check your mailid'
+            
             },
             status=status.HTTP_200_OK)
         # print("RESPONCE",  response.data )
@@ -1413,7 +1419,6 @@ class FeedbackView(generics.ListCreateAPIView):
         return super(self.__class__,self).get(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
-        response = super().post(request,*args,**kwargs)
         # print("RESPONCE",  response.data )
         return Response({'request_status': 1,
                             'results':{
@@ -1434,7 +1439,6 @@ class SponsorsView(generics.ListCreateAPIView):
 
 
     def post(self, request, *args, **kwargs):
-        response = super().post(request,*args,**kwargs)
         # print("RESPONCE",  response.data )
         return Response({'request_status': 1,
                             'results':{
@@ -1455,7 +1459,6 @@ class ServiceView(generics.ListCreateAPIView):
         return super(self.__class__,self).get(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
-        response = super().post(request,*args,**kwargs)
         return Response({'request_status': 1,
                             'results':{
                                 'msg':'Success, (Service)We Will Get Back To You Soon'
@@ -1475,7 +1478,6 @@ class CareerView(generics.ListCreateAPIView):
         return super(self.__class__,self).get(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
-        response = super().post(request,*args,**kwargs)
         return Response({'request_status': 1,
                             'results':{
                                 'msg':'Success, Your data is submited'
@@ -1495,7 +1497,6 @@ class AboutView(generics.ListCreateAPIView):
         return super(self.__class__,self).get(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
-        response = super().post(request,*args,**kwargs)
         return Response({'request_status': 1,
                             'results':{
                                 'msg':'Success, About is submitted'
@@ -1503,11 +1504,11 @@ class AboutView(generics.ListCreateAPIView):
                             },
                             status=status.HTTP_200_OK)
 
-class Terms_conditionsView(generics.ListCreateAPIView):
+class TermsConditionsView(generics.ListCreateAPIView):
     permission_classes = [AllowAny]
-    queryset = Terms_conditions.objects.filter(is_deleted=False)
+    queryset = TermsConditions.objects.filter(is_deleted=False)
     # pagination_class = OnOffPagination
-    serializer_class = Terms_conditionsSerializer
+    serializer_class = TermsConditionsViewSerializer
 
 
     # @response_modify_decorator_list_or_get_after_execution_for_onoff_pagination
@@ -1515,7 +1516,6 @@ class Terms_conditionsView(generics.ListCreateAPIView):
         return super(self.__class__,self).get(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
-        response = super().post(request,*args,**kwargs)
         return Response({'request_status': 1,
                             'results':{
                                 'msg':'Success, Terms and Conditions is submitted'
@@ -1523,11 +1523,11 @@ class Terms_conditionsView(generics.ListCreateAPIView):
                             },
                             status=status.HTTP_200_OK)
 
-class Privacy_policyView(generics.ListCreateAPIView):
+class PrivacyPolicyView(generics.ListCreateAPIView):
     permission_classes = [AllowAny]
-    queryset = Privacy_policy.objects.filter(is_deleted=False)
+    queryset = PrivacyPolicy.objects.filter(is_deleted=False)
     # pagination_class = OnOffPagination
-    serializer_class = Privacy_policySerializer
+    serializer_class = PrivacyPolicyViewSerializer
 
 
     # @response_modify_decorator_list_or_get_after_execution_for_onoff_pagination
@@ -1535,7 +1535,6 @@ class Privacy_policyView(generics.ListCreateAPIView):
         return super(self.__class__,self).get(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
-        response = super().post(request,*args,**kwargs)
         return Response({'request_status': 1,
                             'results':{
                                 'msg':'Success, Privacy Policy is submitted'
@@ -1551,13 +1550,16 @@ class WatchTimerLogView(generics.ListCreateAPIView):
     serializer_class = WatchTimerLogSerializer
 
     def post(self, request, *args, **kwargs):
+        # print('request',request)
         profile_id = request.user.profile.id
+        print('profile_id',profile_id)
         duration = request.data["duration"]
-        WatchTimerLog.objects.create(profile_id=profile_id,duration=duration)
-        response = super(self.__class__,self).post(request, *args, **kwargs)
-        print(response)
+        # response = super(self.__class__,self).post(request, *args, **kwargs)
+        response=WatchTimerLog.objects.create(profile_id=profile_id,duration=duration)
+        # print(response.__dict__)
+        response.__dict__.pop('_state')
         return Response({'request_status': 1,
-                        'results':response.data,
-                        'msg':'Success'
-                        },
-                        status=status.HTTP_200_OK)
+                    'results':response.__dict__,
+                    'msg':'Success'
+                    },
+                    status=status.HTTP_200_OK)
