@@ -1,0 +1,42 @@
+Kidsclub ACCESS cONTROL :-------
+
+Database:----------------------
+db - banaoapp_kidsclub
+user : - banaoapp_kid
+pwd: - kidsclub@12345
+
+--------------------------------
+
+FTP CLIENT :--------------------
+148.72.41.88
+user: banaoapp
+pwd: ^fw]3?tCzB[K
+=--------------------------------
+BanaoApp Credentials (cpanel)
+===========================​
+Link : https://148.72.41.78:2083/​
+User : banaoapp​
+Pass :  ^fw]3?tCzB[K​
+
+
+admin:-------------------------
+http://148.72.41.78:8002/
+admin
+admin@123
+admin@kidsclub.com
+
+
+python manage.py runsslserver 0.0.0.0:8002 --certificate /home/banaoapp/ssl/certs/banaoapp_com_ab8ee_006ef_1589967157_d4db52b40699ba0d9d20cf92cdb7d64a.crt --key /home/banaoapp/ssl/keys/ab8ee_006ef_e299c13d33f3eab89b3613e39c8b98a3.key
+
+banaoapp_com_ab8ee_006ef_1589967157_d4db52b40699ba0d9d20cf92cdb7d64a.crt
+ab8ee_006ef_e299c13d33f3eab89b3613e39c8b98a3.key
+
+screen
+activate env 
+runserver 
+ctl+A+D 
+screen -ls
+screen -r "screen id" if dtached screen 
+screen -r -d "screen id" if attached screen 
+screen -X -S "screen id " quit
+

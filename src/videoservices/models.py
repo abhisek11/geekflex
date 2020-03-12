@@ -47,6 +47,7 @@ class Profile(models.Model):
 
     AUTH_TYPES = (
         ('Kidsclub','Kidsclub'),
+        ('Subchild','Subchild'),
         ('Facebook','Facebook'),
         ('Google','Google'),
     )
@@ -61,6 +62,7 @@ class Profile(models.Model):
         ('Parent','Parent'),
         ('Child','Child'),
         ('Company', 'Company'),
+        ('Subchild','Subchild'),
     )
     GENDER = (
         ('M', 'Male'),
@@ -69,6 +71,7 @@ class Profile(models.Model):
     )
     auth_provider = models.CharField(default='Kidsclub', choices=AUTH_TYPES,max_length=20)
     verified = models.IntegerField(default=0, choices=VERIFIED_TYPES)
+    parent_id = models.IntegerField(default=0)
     user = models.OneToOneField(User,on_delete=models.CASCADE,blank=True,null=True)
     account = models.CharField(default='Individual', choices=ACCOUNT_TYPES,max_length=20)
     photoUrl = models.CharField( max_length=1000,blank=True,null=True)
@@ -86,6 +89,7 @@ class Profile(models.Model):
     child_count = models.IntegerField(default=0)
     is_phone_verified = models.BooleanField(default=False)
     is_email_verified = models.BooleanField(default=False)
+    bio = models.TextField(blank=True,null=True) #for future channel about section 
     is_deleted = models.BooleanField(default=False)
     created_by = models.ForeignKey(User, related_name='p_created_by',
                                    on_delete=models.CASCADE, blank=True, null=True)
@@ -105,33 +109,33 @@ class Profile(models.Model):
     class Meta:
         db_table = 'Profile'
 
-class SubChildProfile(models.Model):
-    GENDER = (
-        ('M', 'Male'),
-        ('F', 'Female'),
-        ('O','Other')
-    )
-    profile = models.ForeignKey(Profile,on_delete=models.CASCADE)
-    firstname = models.CharField(blank=True, max_length=30)
-    lastname = models.CharField(blank=True, max_length=150)
-    dob = models.DateField(default=date(1000, 1, 1))
-    image = models.ImageField(upload_to="avatars", default="avatars/None/default_avatar.png")
-    gender = models.CharField(blank=True, max_length=1, choices=GENDER)
-    is_deleted = models.BooleanField(default=False)
-    created_by = models.ForeignKey(User, related_name='s_c_p_created_by',
-                                   on_delete=models.CASCADE, blank=True, null=True)
-    owned_by = models.ForeignKey(User, related_name='s_c_p_owned_by',
-                                 on_delete=models.CASCADE, blank=True, null=True)
-    updated_by = models.ForeignKey(User, related_name='s_c_p_updated_by',
-                                   on_delete=models.CASCADE, blank=True, null=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+# class SubChildProfile(models.Model):
+#     GENDER = (
+#         ('M', 'Male'),
+#         ('F', 'Female'),
+#         ('O','Other')
+#     )
+#     profile = models.ForeignKey(Profile,on_delete=models.CASCADE)
+#     firstname = models.CharField(blank=True, max_length=30)
+#     lastname = models.CharField(blank=True, max_length=150)
+#     dob = models.DateField(default=date(1000, 1, 1))
+#     image = models.ImageField(upload_to="avatars", default="avatars/None/default_avatar.png")
+#     gender = models.CharField(blank=True, max_length=1, choices=GENDER)
+#     is_deleted = models.BooleanField(default=False)
+#     created_by = models.ForeignKey(User, related_name='s_c_p_created_by',
+#                                    on_delete=models.CASCADE, blank=True, null=True)
+#     owned_by = models.ForeignKey(User, related_name='s_c_p_owned_by',
+#                                  on_delete=models.CASCADE, blank=True, null=True)
+#     updated_by = models.ForeignKey(User, related_name='s_c_p_updated_by',
+#                                    on_delete=models.CASCADE, blank=True, null=True)
+#     created_at = models.DateTimeField(auto_now_add=True)
+#     updated_at = models.DateTimeField(auto_now=True)
 
-    def __str__(self):
-        return str(self.id)
+#     def __str__(self):
+#         return str(self.id)
 
-    class Meta:
-        db_table = 'SubChildProfile'
+#     class Meta:
+#         db_table = 'SubChildProfile'
 
 
 class Video(models.Model):
@@ -535,7 +539,7 @@ class TermsConditions(models.Model):
         return str(self.id)
 
     class Meta:
-        db_table = 'terms_condition'
+        db_table = 'terms_conditions'
 
 class PrivacyPolicy(models.Model):
     title = models.CharField( max_length=500)
@@ -554,7 +558,7 @@ class PrivacyPolicy(models.Model):
         return str(self.id)
 
     class Meta:
-        db_table = 'privacy_policys'
+        db_table = 'privacy_policy'
 
 class WatchTimerLog(models.Model):
     profile = models.ForeignKey(Profile,on_delete=models.CASCADE)

@@ -62,6 +62,28 @@ class AuthTokenSerializer(serializers.Serializer):
             else:
                 msg = _('Provided credentials with username and password cannot be blank .')
                 raise CustomAPIException(None,msg,status_code=status.HTTP_400_BAD_REQUEST)
+        
+        elif auth_provider.lower()== 'subchild':
+            username = attrs.get('username')
+            password = attrs.get('password')
+            # if username is  and password :
+            print("username",username,'password',password,'auth_provider',auth_provider)
+            if username and password :
+            # if (username is not None or username is not "") and (password is not None or password is not ""):
+
+                user = authenticate(request=self.context.get('request'),
+                                    username=username, password=password,auth_provider=auth_provider)
+                print("user",user)
+                # The authenticate call simply returns None for is_active=False
+                # users. (Assuming the default ModelBackend authentication
+                # backend.)
+                if not user:
+                    msg = _('Unable to log in with provided credentials.')
+                    # raise serializers.ValidationError(msg, code='authorization')
+                    raise CustomAPIException(None,msg,status_code=status.HTTP_200_OK)
+            else:
+                msg = _('Provided credentials with username and password cannot be blank .')
+                raise CustomAPIException(None,msg,status_code=status.HTTP_400_BAD_REQUEST)
 
         elif auth_provider.lower() == 'facebook' or auth_provider.lower() == 'google':
             username = attrs.get('username')

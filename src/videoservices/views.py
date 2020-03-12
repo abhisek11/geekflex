@@ -106,7 +106,7 @@ class ProfileOrChannelDetailsView(generics.ListAPIView):
 class SubChildUserDetailsView(generics.ListAPIView):
     permission_classes = [IsAuthenticated] 
     authentication_classes = [TokenAuthentication]
-    queryset = SubChildProfile.objects.filter(is_deleted=False)
+    queryset = Profile.objects.filter(is_deleted=False)
     serializer_class = SubChildUserDetailsViewSerializer
 
     def get_queryset(self):
@@ -142,7 +142,7 @@ class RemoveProfileImageView(generics.UpdateAPIView):
 class RemoveProfileSubChildImageView(generics.UpdateAPIView):
     permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication]
-    queryset = SubChildProfile.objects.filter(is_deleted=False)
+    queryset = Profile.objects.filter(is_deleted=False)
     serializer_class = RemoveProfileSubChildImageViewSerializer
 
     @response_modify_decorator_update
@@ -152,7 +152,7 @@ class RemoveProfileSubChildImageView(generics.UpdateAPIView):
 class EditSubChildProfileImageView(generics.UpdateAPIView):
     permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication]
-    queryset = SubChildProfile.objects.filter(is_deleted=False)
+    queryset = Profile.objects.filter(is_deleted=False)
     serializer_class = EditSubChildProfileImageViewSerializer
 
     @response_modify_decorator_update
@@ -786,9 +786,14 @@ class HomeVideoListingView(generics.ListAPIView):
     
     def search_in (self,column,operator,value_list):         
         myfilter = column + '__' + operator
-        q_object = reduce(or_, (Q(**{myfilter:search}) for search in value_list))
-        # print('q_object',q_object)
-        return q_object
+        try:
+            q_object = reduce(or_, (Q(**{myfilter:search}) for search in value_list))
+        
+            # print('q_object',q_object,type(q_object))
+            return q_object
+        except Exception:
+            return Q()
+
 
     def video_view_count(self,video_id):
         latest_dict={}
@@ -1386,7 +1391,7 @@ class HelpView(generics.ListCreateAPIView):
                 'name':name,
                 'query':query,
             }
-            mail_class = GlobleMailSend('QUERY', [mail_id])
+            mail_class = GlobleMailSend('MKCH', [mail_id])
             mail_thread = Thread(target = mail_class.mailsend, args = (mail_data,))
             mail_thread.start()
     
@@ -1420,12 +1425,39 @@ class FeedbackView(generics.ListCreateAPIView):
 
     def post(self, request, *args, **kwargs):
         # print("RESPONCE",  response.data )
+        email = request.data["email"]
+        feedback = request.data["feedback"]
+        name = request.data["name"]
+        # generate_otp = OTP.generate_token()
+        code = "MKCFB" + str(int(time.time()))
+
+        mail_id = email
+        if mail_id:
+            mail_data = {
+                'token':code,
+                'email':email,
+                'name':name,
+                'feedback':feedback,
+            }
+            mail_class = GlobleMailSend('MKCFB', [mail_id])
+            mail_thread = Thread(target = mail_class.mailsend, args = (mail_data,))
+            mail_thread.start()
+    
         return Response({'request_status': 1,
-                            'results':{
-                                'msg':'Success, Thanks for your feedback we will get back to you, if more information required'
-                                },
-                            },
-                            status=status.HTTP_200_OK)
+            'results':{
+                'email':email,
+                # 'otp':generate_otp,
+                'token':code,
+                },
+            'msg':'Success, Thanks for your feed back we will get back to you soon. Please check your mailid'
+            },
+            status=status.HTTP_200_OK)
+        # return Response({'request_status': 1,
+        #                     'results':{
+        #                         'msg':'Success, Thanks for your feedback we will get back to you, if more information required'
+        #                         },
+        #                     },
+        #                     status=status.HTTP_200_OK)
 
 class SponsorsView(generics.ListCreateAPIView):
     permission_classes = [AllowAny]
@@ -1440,12 +1472,38 @@ class SponsorsView(generics.ListCreateAPIView):
 
     def post(self, request, *args, **kwargs):
         # print("RESPONCE",  response.data )
+        email = request.data["email"]
+        name = request.data["name"]
+        # generate_otp = OTP.generate_token()
+        code = "MKCSPNSRS" + str(int(time.time()))
+
+        mail_id = email
+        if mail_id:
+            mail_data = {
+                'token':code,
+                'email':email,
+                'name':name,
+                # 'feedback':feedback,
+            }
+            mail_class = GlobleMailSend('MKCSPNSRS', [mail_id])
+            mail_thread = Thread(target = mail_class.mailsend, args = (mail_data,))
+            mail_thread.start()
+    
         return Response({'request_status': 1,
-                            'results':{
-                                'msg':'Success, (Sponsors)We Will Get Back To You Soon'
-                                },
-                            },
-                            status=status.HTTP_200_OK)
+            'results':{
+                'email':email,
+                # 'otp':generate_otp,
+                'token':code,
+                },
+            'msg':'Success, We have received your sponsor request. Please check your mailid'
+            },
+            status=status.HTTP_200_OK)
+        # return Response({'request_status': 1,
+        #                     'results':{
+        #                         'msg':'Success, (Sponsors)We Will Get Back To You Soon'
+        #                         },
+        #                     },
+        #                     status=status.HTTP_200_OK)
 
 class ServiceView(generics.ListCreateAPIView):
     permission_classes = [AllowAny]
@@ -1459,12 +1517,39 @@ class ServiceView(generics.ListCreateAPIView):
         return super(self.__class__,self).get(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
+        response = super().post(request,*args,**kwargs)
+        email = request.data["email"]
+        name = request.data["name"]
+        # generate_otp = OTP.generate_token()
+        code = "MKCSRVS" + str(int(time.time()))
+
+        mail_id = email
+        if mail_id:
+            mail_data = {
+                'token':code,
+                'email':email,
+                'name':name,
+                # 'feedback':feedback,
+            }
+            mail_class = GlobleMailSend('MKCSRVS', [mail_id])
+            mail_thread = Thread(target = mail_class.mailsend, args = (mail_data,))
+            mail_thread.start()
+    
         return Response({'request_status': 1,
-                            'results':{
-                                'msg':'Success, (Service)We Will Get Back To You Soon'
-                                },
-                            },
-                            status=status.HTTP_200_OK)
+            'results':{
+                'email':email,
+                # 'otp':generate_otp,
+                'token':code,
+                },
+            'msg':'Success, We have received your service request. Please check your mailid'
+            },
+            status=status.HTTP_200_OK)
+        # return Response({'request_status': 1,
+        #                     'results':{
+        #                         'msg':'Success, (Service)We Will Get Back To You Soon'
+        #                         },
+        #                     },
+        #                     status=status.HTTP_200_OK)
 
 class CareerView(generics.ListCreateAPIView):
     permission_classes = [AllowAny]
@@ -1559,7 +1644,7 @@ class WatchTimerLogView(generics.ListCreateAPIView):
         # print(response.__dict__)
         response.__dict__.pop('_state')
         return Response({'request_status': 1,
-                    'results':response.__dict__,
-                    'msg':'Success'
-                    },
-                    status=status.HTTP_200_OK)
+                        'results':response.__dict__,
+                        'msg':'Success'
+                        },
+                        status=status.HTTP_200_OK)

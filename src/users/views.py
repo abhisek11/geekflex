@@ -272,7 +272,7 @@ class AuthCheckerView(generics.ListAPIView):
             # data['token'] = token
             data['username'] = username
             if user_detials.account != 'Company':
-                if user_detials.auth_provider != 'Kidsclub':
+                if user_detials.auth_provider.lower() != 'kidsclub' and user_detials.auth_provider.lower() != 'subchild':
                     data['user_details']={
                             "user_id":user_detials.user.id,
                             "profile_id":user_detials.id,
@@ -353,6 +353,9 @@ class LoginView(KnoxLoginView):
             if auth_provider.lower() == 'kidsclub':
                 username = request.data['username']
                 password = request.data['password']
+            elif auth_provider.lower() == 'subchild':
+                username = request.data['username']#subchild id 
+                password = request.data['password']#subchild parent password
 
             elif auth_provider.lower() == 'facebook' or auth_provider.lower() == 'google':
                 username = request.data['username']
@@ -469,7 +472,7 @@ class LoginView(KnoxLoginView):
                     return Response(data)
 
                 if user_detials.account != 'Company':
-                    if user_detials.auth_provider.lower() != 'kidsclub':
+                    if user_detials.auth_provider.lower() != 'kidsclub' and user_detials.auth_provider.lower() != 'subchild':
                         data['user_details']={
                                 "user_id":user_detials.user.id,
                                 "profile_id":user_detials.id,
@@ -550,7 +553,7 @@ class SignupUserView(generics.ListCreateAPIView):
 class SignupSubChildUserView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated] 
     authentication_classes = [TokenAuthentication]
-    queryset = SubChildProfile.objects.filter(is_deleted=False)
+    queryset = Profile.objects.filter(is_deleted=False)
     serializer_class = SignupSubChildUserAddSerializer
 
     @response_modify_decorator_post
@@ -559,7 +562,7 @@ class SignupSubChildUserView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         parent_profile_id = self.request.user.profile.id if self.request.user.profile.account == 'Parent' else None
-        return self.queryset.filter(profile=parent_profile_id)
+        return self.queryset.filter(parent_id=parent_profile_id)
 
 
     @response_modify_decorator_get_after_execution
@@ -569,7 +572,7 @@ class SignupSubChildUserView(generics.ListCreateAPIView):
 class EditSubChildProfileView(generics.UpdateAPIView):
     permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication]
-    queryset = SubChildProfile.objects.filter(is_deleted=False)
+    queryset = Profile.objects.filter(is_deleted=False)
     serializer_class = EditSubChildProfileViewSerializer
 
     @response_modify_decorator_update
@@ -579,17 +582,18 @@ class EditSubChildProfileView(generics.UpdateAPIView):
         print("parent_id",parent_id)
         if account == 'Parent':
             child_id = self.kwargs['pk']
-            if SubChildProfile.objects.get(id=child_id).profile.id == parent_id:
+            if Profile.objects.get(account='Subchild',id=child_id).parent_id == parent_id:
                 firstname= request.data.get('firstname') if request.data.get('firstname') else ""
                 lastname= request.data.get('lastname') if request.data.get('lastname') else ""
                 dob= request.data.get('dob') if request.data.get('dob') else None
                 gender= request.data.get('gender') if request.data.get('gender') else None
                 updated_by= request.data.get('updated_by')
                 response = super(self.__class__,self).put(request, *args, **kwargs)
-                sub_child = SubChildProfile.objects.exclude(id=child_id).filter(firstname__iexact=firstname,lastname__iexact=lastname,is_deleted=False)
+                #exclude current child to check other child name exists or not 
+                sub_child = Profile.objects.exclude(account='Subchild',id=child_id).filter(parent_id=parent_id,firstname__iexact=firstname,lastname__iexact=lastname,is_deleted=False)
                 if not sub_child:
                     print("lets seee")
-                    sub_child_update = SubChildProfile.objects.filter(id=child_id).update(firstname=firstname,
+                    sub_child_update = Profile.objects.filter(id=child_id).update(firstname=firstname,
                                         lastname=lastname,dob=dob,gender=gender,updated_by=updated_by)
                     return response
                 else:

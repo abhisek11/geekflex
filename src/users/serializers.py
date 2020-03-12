@@ -253,8 +253,8 @@ class SignupSubChildUserAddSerializer(serializers.ModelSerializer):
     image= serializers.ImageField(max_length=None, use_url=True, allow_null=True, required=False)
     profile = serializers.CharField(required=False)
     class Meta:
-        model=SubChildProfile
-        fields=('id','profile','firstname','lastname','dob','gender','created_by','owned_by','image')
+        model=Profile
+        fields=('__all__')
 
     def create(self,validated_data):
         try:
@@ -264,33 +264,86 @@ class SignupSubChildUserAddSerializer(serializers.ModelSerializer):
             request =  self.context['request']
             acc_type = request.user.profile.account
             profile = request.user.profile.id
+            country_code=request.user.profile.country_code
+            dial_code=request.user.profile.dial_code
+
             print("acc_type",acc_type,profile)
-            image= validated_data.get('image') if validated_data.get('image') else None
-            firstname= validated_data.get('firstname') if validated_data.get('firstname') else ""
-            lastname= validated_data.get('lastname') if validated_data.get('lastname') else ""
+            image = validated_data.get('image') if validated_data.get('image') else None
+            firstname = validated_data.get('firstname') if validated_data.get('firstname') else ""
+            lastname = validated_data.get('lastname') if validated_data.get('lastname') else ""
+            password = 'Mkc@12345' #for convenience and future scope a dedicated password for subchild user in User table 
             dob= validated_data.get('dob') if validated_data.get('dob') else None
             gender= validated_data.get('gender') if validated_data.get('gender') else None
             with transaction.atomic():
                 if acc_type == 'Parent':
                     if image is not None:
-                        sub_child = SubChildProfile.objects.filter(firstname__iexact=firstname,lastname__iexact=lastname,profile_id=int(profile))
+                        sub_child = Profile.objects.filter(account='Subchild',firstname__iexact=firstname,lastname__iexact=lastname,
+                                                            parent_id=int(profile),is_deleted=False)
+                                        
                         if not sub_child:
-                            SubChildProfile.objects.create(profile_id=int(profile),firstname=firstname,
-                            image=image,lastname=lastname,dob=dob,gender=gender,owned_by=owned_by,created_by=created_by)
+                            #***********************Subchild email generation***************************************************
+                            if firstname is not None and lastname is not None and firstname is not "" and lastname is not "":
+                                email = firstname+lastname+str(profile)+'@mykidsclub.com'
+                            else:
+                                #if above condition fail random generation of email for subchild
+                                email = "mkc_parent_id_" +str(profile)+str(int(time.time()))+'@mykidsclub.com'
+                            #*****************************************************************************************************
+                            user= User.objects.create_user(username = email,email=email,
+                                                            first_name=firstname,last_name=lastname)
+                            user.set_password(password)
+                            # user.is_staff = True #for testing of user 
+                            user.is_active = True
+                            user.save()
+
+                            sub_child_create = Profile.objects.create(user=user,auth_provider='Subchild',parent_id=profile,
+                                                    firstname=firstname,account='Subchild',
+                                                    image=image,lastname=lastname,email=email,
+                                                    dob=dob,gender=gender,country_code=country_code,
+                                                    dial_code=dial_code,owned_by=owned_by,
+                                                    created_by=created_by)
                         else:
                             raise CustomAPIException(None,'Child Name Already exist',status_code=status.HTTP_409_CONFLICT)
                     else:
-                        sub_child = SubChildProfile.objects.filter(firstname__iexact=firstname,lastname__iexact=lastname,profile_id=int(profile))
+                        sub_child = Profile.objects.filter(account='Subchild',firstname__iexact=firstname,lastname__iexact=lastname,
+                                                            parent_id=int(profile),is_deleted=False)
                         if not sub_child:
-                            SubChildProfile.objects.create(profile_id=int(profile),firstname=firstname,lastname=lastname,
-                            dob=dob,gender=gender,owned_by=owned_by,created_by=created_by)
+                            #***********************Subchild email generation***************************************************
+                            if firstname is not None and lastname is not None and firstname is not "" and lastname is not "":
+                                email = firstname+lastname+str(profile)+'@mykidsclub.com'
+                            else:
+                                #if above condition fail random generation of email for subchild
+                                email = "mkc_parent_id_" +str(profile)+str(int(time.time()))+'@mykidsclub.com'
+                            #*****************************************************************************************************
+                            user= User.objects.create_user(username = email,email=email,
+                                                            first_name=firstname,last_name=lastname)
+                            user.set_password(password)
+                            # user.is_staff = True #for testing of user 
+                            user.is_active = True
+                            user.save()
+
+                            sub_child_create = Profile.objects.create(user=user,auth_provider='Subchild',parent_id=profile,
+                                                    firstname=firstname,account='Subchild'
+                                                    ,lastname=lastname,email=email,dob=dob,
+                                                    gender=gender,country_code=country_code,
+                                                    dial_code=dial_code,owned_by=owned_by,
+                                                    created_by=created_by)
                         else:
                             raise CustomAPIException(None,'Child Name Already exist',status_code=status.HTTP_409_CONFLICT)
-                    if sub_child:
-                        print('sub_child',sub_child)
-                        sub_child.__dict__['profile'] = sub_child.profile
-                        sub_child.__dict__['image_url'] = request.build_absolute_uri(sub_child.image.url)
-                        return sub_child.__dict__
+                    if sub_child_create:
+                        sub_child_get = Profile.objects.get(id=str(sub_child_create),is_deleted=False)
+                        data["created_by"]= sub_child_get.created_by 
+                        data["owned_by"]= sub_child_get.owned_by 
+                        # data["image"]=  request.build_absolute_uri(sub_child_get.image.url)
+                        data["firstname"]=  sub_child_get.firstname
+                        data["lastname"]=  sub_child_get.lastname
+                        data["email"]=  sub_child_get.email
+                        data["auth_provider"]=  sub_child_get.auth_provider
+                        data["verified"]=  sub_child_get.verified
+                        data["parent_id"]=  sub_child_get.parent_id
+                        data["dob"]=  sub_child_get.dob
+                        data["gender"]=  sub_child_get.gender
+                        data["user"]=  sub_child_get.user
+                        return data
                     
 
                 else:
@@ -305,7 +358,7 @@ class EditSubChildProfileViewSerializer(serializers.ModelSerializer):
     # image = serializers.FileField(required=False)
     # profile=serializers.IntegerField(required=False)
     class Meta:
-        model=SubChildProfile
+        model=Profile
         fields=('firstname','lastname','dob','gender','updated_by','owned_by')
 
 class AuthCheckerSerializer(serializers.Serializer):

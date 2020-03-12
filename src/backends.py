@@ -86,7 +86,32 @@ class EmailandPhoneAuthBackend(ModelBackend):
 						# raise serializers.ValidationError(msg, code='authorization')
 						raise CustomAPIException(None,msg,status_code=status.HTTP_200_OK)
 					
-						
+			elif kwargs['auth_provider'].lower() == 'subchild':
+				if username and password:
+
+					user_name = Profile.objects.filter(id=username,auth_provider=kwargs['auth_provider'],is_deleted=False).values('user__username')
+					parent_id = Profile.objects.get(id=username,auth_provider=kwargs['auth_provider'],is_deleted=False).parent_id
+					parent_name = Profile.objects.filter(id=parent_id,is_deleted=False).values('user__username')
+					print("user_name",user_name,"parent_name",parent_name)
+					if user_name and parent_name:
+						account_validation_child = User.objects.get(username=user_name[0]['user__username'])
+						account_validation_parent = User.objects.get(username=parent_name[0]['user__username'])
+						if account_validation_child.is_active == True and account_validation_parent.is_active == True:
+							sub_child_user = User.objects.get(username=user_name[0]['user__username']) #subchild user 
+							parent_user = User.objects.get(username=parent_name[0]['user__username']) #parent user
+							if parent_user.check_password(password) and self.user_can_authenticate(sub_child_user):
+								return sub_child_user
+						else:
+							msg = 'Please verify your email to activate account.'
+							print("msg",msg)
+							# raise serializers.ValidationError(msg, code='authorization')
+							raise CustomAPIException(None,msg,status_code=status.HTTP_200_OK)
+					else:
+						msg = 'Unable to log in with provided credentials.'
+						print("msg",msg)
+						# raise serializers.ValidationError(msg, code='authorization')
+						raise CustomAPIException(None,msg,status_code=status.HTTP_200_OK)
+					
 					
 			elif kwargs['auth_provider'].lower() == 'facebook' or kwargs['auth_provider'].lower() == 'google': 
 				if username and password is None:

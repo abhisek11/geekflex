@@ -126,7 +126,7 @@ class RemoveProfileSubChildImageViewSerializer(serializers.ModelSerializer):
     owned_by = serializers.CharField(default=serializers.CurrentUserDefault())
 
     class Meta:
-        model=SubChildProfile
+        model=Profile
         fields=('id','image','updated_by','owned_by')
     
     def update(self,instance, validated_data):
@@ -146,7 +146,7 @@ class EditSubChildProfileImageViewSerializer(serializers.ModelSerializer):
     owned_by = serializers.CharField(default=serializers.CurrentUserDefault())
 
     class Meta:
-        model=SubChildProfile
+        model=Profile
         fields=('id','image','updated_by','owned_by')
 class SubscribeChannelAddSerializer(serializers.ModelSerializer):
     created_by = serializers.CharField(default=serializers.CurrentUserDefault())
@@ -340,8 +340,8 @@ class SubChildUserDetailsViewSerializer(serializers.ModelSerializer):
     image= serializers.ImageField(max_length=None, use_url=True, allow_null=True, required=False)
     profile = serializers.CharField(required=False)
     class Meta:
-        model=SubChildProfile
-        fields=('id','profile','firstname','lastname','dob','gender','created_by','owned_by','image')
+        model=Profile
+        fields=('__all__')
 class ChannelVideoListingViewSerializer(serializers.ModelSerializer):
     created_by = serializers.CharField(default=serializers.CurrentUserDefault())
     owned_by = serializers.CharField(default=serializers.CurrentUserDefault())

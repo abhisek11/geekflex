@@ -10,9 +10,9 @@ class Genere(admin.ModelAdmin):
 class Profile(admin.ModelAdmin):
     list_display = [field.name for field in Profile._meta.fields]
 
-@admin.register(SubChildProfile)
-class SubChildProfile(admin.ModelAdmin):
-    list_display = [field.name for field in SubChildProfile._meta.fields]
+# @admin.register(SubChildProfile)
+# class SubChildProfile(admin.ModelAdmin):
+#     list_display = [field.name for field in SubChildProfile._meta.fields]
 
 @admin.register(Notifications)
 class Notifications(admin.ModelAdmin):
