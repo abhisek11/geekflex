@@ -29,6 +29,7 @@ urlpatterns = [
     
     ###################### Multi session Login Logout #####################################
     path('auth_checker/', views.AuthCheckerView.as_view(), name='auth_checker'),
+    path('parent_login_checker/', views.ParentLoginCheckerView.as_view(), name='parent_login_checker'),
     path('login/', views.LoginView.as_view(), name='knox_login'),
     # path('subchild_login/', views.LoginView.as_view(), name='knox_login'),
     path('logout/', knox_views.LogoutView.as_view(), name='knox_logout'),

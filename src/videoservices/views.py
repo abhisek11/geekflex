@@ -895,63 +895,63 @@ class HomeVideoListingView(generics.ListAPIView):
             data['views']=view_auth_profile+view_guest_profile
         return response 
 
-class HomeVideoListingAuthView(generics.ListAPIView):
+# class HomeVideoListingAuthView(generics.ListAPIView):
 
-    permission_classes = [IsAuthenticated]
-    authentication_classes = [TokenAuthentication]
-    pagination_class = OnOffPagination
-    queryset = Video.objects.filter(is_deleted=False).order_by('-id')
-    serializer_class = HomeVideoListingViewSerializer
+#     permission_classes = [IsAuthenticated]
+#     authentication_classes = [TokenAuthentication]
+#     pagination_class = OnOffPagination
+#     queryset = Video.objects.filter(is_deleted=False).order_by('-id')
+#     serializer_class = HomeVideoListingViewSerializer
     
-    def get_queryset(self):
-        tab = self.request.query_params.get('tab',None)
-        if tab and tab.lower() == 'latest':
-            return self.queryset.order_by('-created_at')
-        elif tab and tab.lower() == 'recommended':
-            return self.queryset.order_by('?')
-        elif tab and tab.lower() == 'featured':
-            return self.queryset.filter(featured_video=True).order_by('-id')
-        else:
-            return self.queryset
+#     def get_queryset(self):
+#         tab = self.request.query_params.get('tab',None)
+#         if tab and tab.lower() == 'latest':
+#             return self.queryset.order_by('-created_at')
+#         elif tab and tab.lower() == 'recommended':
+#             return self.queryset.order_by('?')
+#         elif tab and tab.lower() == 'featured':
+#             return self.queryset.filter(featured_video=True).order_by('-id')
+#         else:
+#             return self.queryset
 
 
-    @response_modify_decorator_list_or_get_after_execution_for_onoff_pagination
-    def get(self, request, *args, **kwargs):
-        response = super(self.__class__,self).get(request, *args, **kwargs)
-        for data in response.data['results']:
-            link_list = []
-            thumbnail = VideoThumbnailDocuments.objects.filter(video=data['id'],is_deleted=False)
-            for link in thumbnail:
-                link_list.append(request.build_absolute_uri(link.thumbnail.url))
-            data['thumbnail_stack']=link_list
-            channel_details = Profile.objects.get(id=data['channel'])
+#     @response_modify_decorator_list_or_get_after_execution_for_onoff_pagination
+#     def get(self, request, *args, **kwargs):
+#         response = super(self.__class__,self).get(request, *args, **kwargs)
+#         for data in response.data['results']:
+#             link_list = []
+#             thumbnail = VideoThumbnailDocuments.objects.filter(video=data['id'],is_deleted=False)
+#             for link in thumbnail:
+#                 link_list.append(request.build_absolute_uri(link.thumbnail.url))
+#             data['thumbnail_stack']=link_list
+#             channel_details = Profile.objects.get(id=data['channel'])
 
-            if channel_details.account !='Company':
-                data['channel_details']={
-                    'id':channel_details.id,
-                    'user_id':channel_details.user_id,
-                    'firstname':channel_details.firstname,
-                    'lastname': channel_details.lastname,
-                    'image': request.build_absolute_uri(channel_details.image.url),
-                    'subscribed_count':Subscription.objects.filter(subscribe=channel_details.id).\
-                        values_list('profile',flat=True).distinct().count()
+#             if channel_details.account !='Company':
+#                 data['channel_details']={
+#                     'id':channel_details.id,
+#                     'user_id':channel_details.user_id,
+#                     'firstname':channel_details.firstname,
+#                     'lastname': channel_details.lastname,
+#                     'image': request.build_absolute_uri(channel_details.image.url),
+#                     'subscribed_count':Subscription.objects.filter(subscribe=channel_details.id).\
+#                         values_list('profile',flat=True).distinct().count()
                     
-                }
-            else:
-                data['channel_details']={
-                    'id':channel_details.id,
-                    'user_id':channel_details.user_id,
-                    'company_name': channel_details.company_name,
-                    'address': channel_details.address,
-                    'image': request.build_absolute_uri(channel_details.image.url),
-                    'subscribed_count':Subscription.objects.filter(subscribe=channel_details.id).\
-                        values_list('profile',flat=True).distinct().count()
+#                 }
+#             else:
+#                 data['channel_details']={
+#                     'id':channel_details.id,
+#                     'user_id':channel_details.user_id,
+#                     'company_name': channel_details.company_name,
+#                     'address': channel_details.address,
+#                     'image': request.build_absolute_uri(channel_details.image.url),
+#                     'subscribed_count':Subscription.objects.filter(subscribe=channel_details.id).\
+#                         values_list('profile',flat=True).distinct().count()
                     
-                }
-            view_auth_profile = VideoViews.objects.filter(~Q(Profile=0),video=data['id']).values('Profile').distinct().count()
-            view_guest_profile = VideoViews.objects.filter(Profile=0,video=data['id']).values('ip_address').distinct().count()
-            data['views']=view_auth_profile+view_guest_profile
-        return response 
+#                 }
+#             view_auth_profile = VideoViews.objects.filter(~Q(Profile=0),video=data['id']).values('Profile').distinct().count()
+#             view_guest_profile = VideoViews.objects.filter(Profile=0,video=data['id']).values('ip_address').distinct().count()
+#             data['views']=view_auth_profile+view_guest_profile
+#         return response 
 
 
 class ChannelVideoListingView(generics.ListAPIView):
@@ -1147,9 +1147,14 @@ class SearchView(generics.ListAPIView):
     
     def search_in (self,column,operator,value_list):         
         myfilter = column + '__' + operator
-        q_object = reduce(or_, (Q(**{myfilter:search}) for search in value_list))
-        print('q_object',q_object)
-        return q_object
+
+        try:
+            q_object = reduce(or_, (Q(**{myfilter:search}) for search in value_list))
+        
+            # print('q_object',q_object,type(q_object))
+            return q_object
+        except Exception:
+            return Q()
 
     def get(self, request, *args, **kwargs):
         search = self.request.query_params.get('search', None)

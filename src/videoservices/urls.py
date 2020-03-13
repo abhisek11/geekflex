@@ -4,7 +4,7 @@ from django.conf.urls import url, include
 
 urlpatterns = [
     path('home/',views.HomeVideoListingView.as_view()),
-    path('home/auth/',views.HomeVideoListingAuthView.as_view()),
+    # path('home/auth/',views.HomeVideoListingAuthView.as_view()),
     path('edit_profile/<pk>/',views.EditProfileView.as_view()),
     path('verified_profile_request/<pk>/',views.VerifiedProfileRequestView.as_view()),
     path('edit_profile_image/<pk>/',views.EditProfileImageView.as_view()),

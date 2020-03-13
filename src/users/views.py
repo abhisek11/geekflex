@@ -339,6 +339,53 @@ class AuthCheckerView(generics.ListAPIView):
                 'msg': "Opss! your account is deactivated please contact at kidsadmin@mykidsclub.com for more details"}, status=status.HTTP_200_OK)
 
 
+class ParentLoginCheckerView(generics.ListAPIView):
+    permission_classes = [IsAuthenticated]
+    queryset=User.objects.all()   
+    authentication_classes = [TokenAuthentication]
+    serializer_class = ParentLoginCheckerViewSerializer
+
+    def post(self, request, *args, **kwargs):
+        print("request",request.user)
+        data={}
+        child_user = request.user
+        is_active=  request.user.is_active
+        parent_id = request.user.profile.parent_id
+
+        password = request.data.get('password')
+        try:
+            if is_active == True:
+                if parent_id and password:
+                    parent_name = Profile.objects.filter(id=parent_id,is_deleted=False).values('user__username')
+                    print("parent_name",parent_name)
+                    if parent_name:
+                        account_validation_parent = User.objects.get(username=parent_name[0]['user__username'])
+                        if account_validation_parent.is_active == True:
+                            parent_user = User.objects.get(username=parent_name[0]['user__username']) #parent user
+                            if parent_user.check_password(password) == True:
+                                return Response({'request_status':1,
+                                                        'results':{
+                                                            'msg':'success'
+                                                            },
+                                                        },
+                                                        status=status.HTTP_200_OK)
+                            else:
+                                msg = 'Unable to verify parent account with provided credentials.'
+                                print("msg",msg)
+                                raise CustomAPIException(None,msg,status_code=status.HTTP_200_OK)
+
+                        else:
+                            msg = 'Parent account is not an active account .'
+                            print("msg",msg)
+                            raise CustomAPIException(None,msg,status_code=status.HTTP_200_OK)
+                    else:
+                        msg = 'Please provide valid entry.'
+                        print("msg",msg)
+                        raise CustomAPIException(None,msg,status_code=status.HTTP_200_OK)
+        except Exception as e :
+            raise e 
+            
+
 class LoginView(KnoxLoginView):
     permission_classes = [AllowAny]
     queryset = Profile.objects.filter(is_deleted=False)

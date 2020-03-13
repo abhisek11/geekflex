@@ -366,6 +366,11 @@ class AuthCheckerSerializer(serializers.Serializer):
         model=User
         fields='__all__'
 
+class ParentLoginCheckerViewSerializer(serializers.Serializer):
+    class Meta:
+        model=User
+        fields='__all__'
+
 class ChangePasswordSerializer(serializers.Serializer):
     """
     Serializer for password change endpoint.
